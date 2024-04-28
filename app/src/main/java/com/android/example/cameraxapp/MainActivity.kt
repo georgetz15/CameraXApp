@@ -4,7 +4,6 @@ import android.Manifest
 import android.content.ContentValues
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
-import android.graphics.Color
 import android.graphics.Matrix
 import android.os.Build
 import android.os.Bundle
@@ -17,7 +16,6 @@ import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
-import androidx.camera.core.ImageProxy
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.video.MediaStoreOutputOptions
 import androidx.camera.video.Quality
@@ -29,16 +27,14 @@ import androidx.camera.video.VideoRecordEvent
 import androidx.core.content.ContextCompat
 import androidx.core.content.PermissionChecker
 import com.android.example.cameraxapp.databinding.ActivityMainBinding
-import java.nio.ByteBuffer
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
 
-typealias LumaListener = (luma: Double) -> Unit
-
 class MainActivity : AppCompatActivity() {
+
     private lateinit var viewBinding: ActivityMainBinding
 
     private var imageCapture: ImageCapture? = null
@@ -201,38 +197,38 @@ class MainActivity : AppCompatActivity() {
             // Used to bind the lifecycle of cameras to the lifecycle owner
             val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
 
-            // Preview
-//            val preview = Preview.Builder().build().also {
-//                it.setSurfaceProvider(viewBinding.viewFinder.surfaceProvider)
-//            }
-
             // Image capture
             imageCapture = ImageCapture.Builder().build()
 
-            // Image analysis
-//            val imageAnalyzer = ImageAnalysis.Builder().build().also {
-//                it.setAnalyzer(cameraExecutor, LuminosityAnalyzer { luma ->
-//                    Log.d(TAG, "Average luminosity: $luma")
-//                })
-//            }
+            val imageViewer = ImageAnalysis.Builder()
+                .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
+                .build()
+                .also {
+                    it.setAnalyzer(cameraExecutor) { image ->
+                        Log.d("image view", "image.format = ${image.format}")
+                        var bitmap = image.toBitmap()
+                        val matrix =
+                            Matrix().apply { postRotate(image.imageInfo.rotationDegrees.toFloat()) }
+                        bitmap =
+                            Bitmap.createBitmap(
+                                bitmap,
+                                0,
+                                0,
+                                bitmap.width,
+                                bitmap.height,
+                                matrix,
+                                true
+                            )
+                        image.close()
 
-            val imageViewer = ImageAnalysis.Builder().build().also {
-                it.setAnalyzer(cameraExecutor) { image ->
-                    Log.d("image view", "image.format = ${image.format}")
-                    var bitmap = image.toBitmap()
-                    val matrix =
-                        Matrix().apply { postRotate(image.imageInfo.rotationDegrees.toFloat()) }
-                    bitmap =
-                        Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
-                    image.close()
+                        Log.d("MainActivity begin", getHello())
+                        toGrayscaleCpp(bitmap)
 
-//                    toGrayscale(bitmap)
-
-                    runOnUiThread {
-                        viewBinding.viewFinder.setImageBitmap(bitmap)
+                        runOnUiThread {
+                            viewBinding.viewFinder.setImageBitmap(bitmap)
+                        }
                     }
                 }
-            }
 
             // Recorder
             val recorder = Recorder.Builder()
@@ -252,10 +248,8 @@ class MainActivity : AppCompatActivity() {
                 cameraProvider.bindToLifecycle(
                     this,
                     cameraSelector,
-//                    preview,
                     imageViewer,
                     imageCapture,
-//                    imageAnalyzer,
                     videoCapture
                 )
 
@@ -281,6 +275,13 @@ class MainActivity : AppCompatActivity() {
         cameraExecutor.shutdown()
     }
 
+    init {
+        System.loadLibrary("cameraxapp")
+    }
+
+    private external fun getHello(): String
+    private external fun toGrayscaleCpp(bitmap: Bitmap): Bitmap
+
     companion object {
         private const val TAG = "CameraXApp"
         private const val FILENAME_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"
@@ -291,67 +292,5 @@ class MainActivity : AppCompatActivity() {
                 add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
             }
         }.toTypedArray()
-    }
-
-    private class LuminosityAnalyzer(private val listener: LumaListener) :
-        ImageAnalysis.Analyzer {
-
-        private fun ByteBuffer.toByteArray(): ByteArray {
-            rewind()    // Rewind the buffer to zero
-            val data = ByteArray(remaining())
-            get(data)   // Copy the buffer into a byte array
-            return data // Return the byte array
-        }
-
-        override fun analyze(image: ImageProxy) {
-
-            val bitmap = image.toBitmap()
-            image.close()
-
-            val buffer = image.planes[0].buffer
-            val data = buffer.toByteArray()
-            val pixels = data.map { it.toInt() and 0xFF }
-            val luma = pixels.average()
-
-            listener(luma)
-
-            image.close()
-        }
-    }
-
-    fun toGrayscale(bitmap: Bitmap) {
-        val GS_RED = 0.299
-        val GS_GREEN = 0.587
-        val GS_BLUE = 0.114
-        var pixel: Int
-        var A: Int
-        var R: Int
-        var G: Int
-        var B: Int
-        // get image size
-        // get image size
-        val width: Int = bitmap.width
-        val height: Int = bitmap.height
-
-        // scan through every single pixel
-        for (x in 0 until width) {
-            for (y in 0 until height) {
-                // get one pixel color
-                pixel = bitmap.getPixel(x, y)
-
-                // retrieve color of all channels
-                A = Color.alpha(pixel)
-                R = Color.red(pixel)
-                G = Color.green(pixel)
-                B = Color.blue(pixel)
-
-                // take conversion up to one single value
-                B = (GS_RED * R + GS_GREEN * G + GS_BLUE * B).toInt()
-                G = B
-                R = G
-                // set new pixel color to output bitmap
-                bitmap.setPixel(x, y, Color.argb(A, R, G, B))
-            }
-        }
     }
 }
