@@ -3,37 +3,38 @@ package com.android.example.cameraxapp
 import android.Manifest
 import android.content.ContentValues
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.Color
+import android.graphics.Matrix
 import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
-import androidx.appcompat.app.AppCompatActivity
-import androidx.camera.core.ImageCapture
-import androidx.camera.video.Recorder
-import androidx.camera.video.Recording
-import androidx.camera.video.VideoCapture
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
-import com.android.example.cameraxapp.databinding.ActivityMainBinding
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.camera.lifecycle.ProcessCameraProvider
-import androidx.camera.core.Preview
+import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.CameraSelector
-import android.util.Log
 import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.ImageProxy
-import androidx.camera.video.FallbackStrategy
+import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.video.MediaStoreOutputOptions
 import androidx.camera.video.Quality
 import androidx.camera.video.QualitySelector
+import androidx.camera.video.Recorder
+import androidx.camera.video.Recording
+import androidx.camera.video.VideoCapture
 import androidx.camera.video.VideoRecordEvent
+import androidx.core.content.ContextCompat
 import androidx.core.content.PermissionChecker
+import com.android.example.cameraxapp.databinding.ActivityMainBinding
 import java.nio.ByteBuffer
 import java.text.SimpleDateFormat
 import java.util.Locale
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+
 
 typealias LumaListener = (luma: Double) -> Unit
 
@@ -201,18 +202,36 @@ class MainActivity : AppCompatActivity() {
             val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
 
             // Preview
-            val preview = Preview.Builder().build().also {
-                it.setSurfaceProvider(viewBinding.viewFinder.surfaceProvider)
-            }
+//            val preview = Preview.Builder().build().also {
+//                it.setSurfaceProvider(viewBinding.viewFinder.surfaceProvider)
+//            }
 
             // Image capture
             imageCapture = ImageCapture.Builder().build()
 
             // Image analysis
-            val imageAnalyzer = ImageAnalysis.Builder().build().also {
-                it.setAnalyzer(cameraExecutor, LuminosityAnalyzer { luma ->
-                    Log.d(TAG, "Average luminosity: $luma")
-                })
+//            val imageAnalyzer = ImageAnalysis.Builder().build().also {
+//                it.setAnalyzer(cameraExecutor, LuminosityAnalyzer { luma ->
+//                    Log.d(TAG, "Average luminosity: $luma")
+//                })
+//            }
+
+            val imageViewer = ImageAnalysis.Builder().build().also {
+                it.setAnalyzer(cameraExecutor) { image ->
+                    Log.d("image view", "image.format = ${image.format}")
+                    var bitmap = image.toBitmap()
+                    val matrix =
+                        Matrix().apply { postRotate(image.imageInfo.rotationDegrees.toFloat()) }
+                    bitmap =
+                        Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+                    image.close()
+
+//                    toGrayscale(bitmap)
+
+                    runOnUiThread {
+                        viewBinding.viewFinder.setImageBitmap(bitmap)
+                    }
+                }
             }
 
             // Recorder
@@ -233,9 +252,10 @@ class MainActivity : AppCompatActivity() {
                 cameraProvider.bindToLifecycle(
                     this,
                     cameraSelector,
-                    preview,
+//                    preview,
+                    imageViewer,
                     imageCapture,
-                    imageAnalyzer,
+//                    imageAnalyzer,
                     videoCapture
                 )
 
@@ -273,7 +293,8 @@ class MainActivity : AppCompatActivity() {
         }.toTypedArray()
     }
 
-    private class LuminosityAnalyzer(private val listener: LumaListener) : ImageAnalysis.Analyzer {
+    private class LuminosityAnalyzer(private val listener: LumaListener) :
+        ImageAnalysis.Analyzer {
 
         private fun ByteBuffer.toByteArray(): ByteArray {
             rewind()    // Rewind the buffer to zero
@@ -283,6 +304,9 @@ class MainActivity : AppCompatActivity() {
         }
 
         override fun analyze(image: ImageProxy) {
+
+            val bitmap = image.toBitmap()
+            image.close()
 
             val buffer = image.planes[0].buffer
             val data = buffer.toByteArray()
@@ -295,4 +319,39 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    fun toGrayscale(bitmap: Bitmap) {
+        val GS_RED = 0.299
+        val GS_GREEN = 0.587
+        val GS_BLUE = 0.114
+        var pixel: Int
+        var A: Int
+        var R: Int
+        var G: Int
+        var B: Int
+        // get image size
+        // get image size
+        val width: Int = bitmap.width
+        val height: Int = bitmap.height
+
+        // scan through every single pixel
+        for (x in 0 until width) {
+            for (y in 0 until height) {
+                // get one pixel color
+                pixel = bitmap.getPixel(x, y)
+
+                // retrieve color of all channels
+                A = Color.alpha(pixel)
+                R = Color.red(pixel)
+                G = Color.green(pixel)
+                B = Color.blue(pixel)
+
+                // take conversion up to one single value
+                B = (GS_RED * R + GS_GREEN * G + GS_BLUE * B).toInt()
+                G = B
+                R = G
+                // set new pixel color to output bitmap
+                bitmap.setPixel(x, y, Color.argb(A, R, G, B))
+            }
+        }
+    }
 }
