@@ -19,6 +19,8 @@
 #include <string>
 #include <jni.h>
 #include <android/bitmap.h>
+#include <omp.h>
+
 
 std::string getHello() {
     return "Hello";
@@ -32,7 +34,7 @@ JNIEXPORT jstring JNICALL Java_com_android_example_cameraxapp_MainActivity_getHe
     return result;
 }
 
-struct PixelRGBA {
+struct RGBA8 {
     uint8_t r;
     uint8_t g;
     uint8_t b;
@@ -45,7 +47,7 @@ Java_com_android_example_cameraxapp_MainActivity_toGrayscaleCpp(JNIEnv *env,
                                                                 jobject bitmapIn) {
 
     AndroidBitmapInfo infoIn;
-    PixelRGBA *pixels;
+    RGBA8 *pixels;
 
     // Get image info
     if (AndroidBitmap_getInfo(env, bitmapIn, &infoIn) != ANDROID_BITMAP_RESULT_SUCCESS) {
@@ -74,6 +76,7 @@ Java_com_android_example_cameraxapp_MainActivity_toGrayscaleCpp(JNIEnv *env,
     int height = infoIn.height;
 
     // scan through every single pixel
+#pragma omp parallel for
     for (int y = 0; y < height; ++y) {
         for (int x = 0; x < width; ++x) {
             // retrieve color of all channels
