@@ -28,7 +28,7 @@ std::string getHello() {
 
 extern "C" {
 JNIEXPORT jstring JNICALL
-Java_com_android_example_cameraxapp_MainActivity_getHello(JNIEnv *env, jobject) {
+Java_com_android_example_cameraxapp_GrayscaleActivity_getHello(JNIEnv *env, jobject) {
     const auto hello = getHello();
     jstring result = env->NewStringUTF(hello.c_str());
     return result;
@@ -42,8 +42,8 @@ struct RGBA8 {
 };
 
 JNIEXPORT jobject JNICALL
-Java_com_android_example_cameraxapp_MainActivity_toGrayscaleCpp(JNIEnv *env, jobject,
-                                                                jobject bitmapIn) {
+Java_com_android_example_cameraxapp_GrayscaleActivity_toGrayscaleCpp(JNIEnv *env, jobject,
+                                                                     jobject bitmapIn) {
 
     AndroidBitmapInfo infoIn;
     RGBA8 *pixels;

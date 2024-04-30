@@ -4,7 +4,6 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.ArrayAdapter
 import android.widget.ListView
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 
 class ActivitySelector : AppCompatActivity() {
@@ -15,13 +14,13 @@ class ActivitySelector : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_selector)
 
-        val adapter = ArrayAdapter<String>(this, R.layout.activity_selector_list_item, activities)
+        val adapter = ArrayAdapter(this, R.layout.activity_selector_list_item, activities)
         findViewById<ListView>(R.id.activity_list)
             .also {
                 it.setAdapter(adapter)
                 it.setOnItemClickListener { parent, view, position, id ->
                     val targetActivity = when (position) {
-                        0 -> MainActivity::class.java
+                        0 -> GrayscaleActivity::class.java
                         else -> null
                     }
 

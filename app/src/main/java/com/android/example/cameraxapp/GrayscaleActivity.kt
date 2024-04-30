@@ -33,7 +33,7 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
 
-class MainActivity : AppCompatActivity() {
+class GrayscaleActivity : AppCompatActivity() {
 
     private lateinit var viewBinding: ActivityMainBinding
 
@@ -149,7 +149,7 @@ class MainActivity : AppCompatActivity() {
             .prepareRecording(this, mediaStoreOutputOptions)
             .apply {
                 if (PermissionChecker.checkSelfPermission(
-                        this@MainActivity,
+                        this@GrayscaleActivity,
                         Manifest.permission.RECORD_AUDIO
                     ) ==
                     PermissionChecker.PERMISSION_GRANTED
