@@ -27,8 +27,8 @@ std::string getHello() {
 }
 
 extern "C" {
-JNIEXPORT jstring JNICALL Java_com_android_example_cameraxapp_MainActivity_getHello(JNIEnv
-                                                                                    *env, jobject) {
+JNIEXPORT jstring JNICALL
+Java_com_android_example_cameraxapp_MainActivity_getHello(JNIEnv *env, jobject) {
     const auto hello = getHello();
     jstring result = env->NewStringUTF(hello.c_str());
     return result;
@@ -42,8 +42,7 @@ struct RGBA8 {
 };
 
 JNIEXPORT jobject JNICALL
-Java_com_android_example_cameraxapp_MainActivity_toGrayscaleCpp(JNIEnv *env,
-                                                                jobject,
+Java_com_android_example_cameraxapp_MainActivity_toGrayscaleCpp(JNIEnv *env, jobject,
                                                                 jobject bitmapIn) {
 
     AndroidBitmapInfo infoIn;
@@ -76,7 +75,7 @@ Java_com_android_example_cameraxapp_MainActivity_toGrayscaleCpp(JNIEnv *env,
     int height = infoIn.height;
 
     // scan through every single pixel
-#pragma omp parallel for
+#pragma omp parallel for collapse(2)
     for (int y = 0; y < height; ++y) {
         for (int x = 0; x < width; ++x) {
             // retrieve color of all channels
