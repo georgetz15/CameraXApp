@@ -222,7 +222,8 @@ class GrayscaleActivity : AppCompatActivity() {
                         image.close()
 
                         Log.d("MainActivity begin", getHello())
-                        toGrayscaleCpp(bitmap)
+//                        toGrayscale(bitmap)
+                        blur(bitmap, 5)
 
                         runOnUiThread {
                             viewBinding.viewFinder.setImageBitmap(bitmap)
@@ -280,7 +281,8 @@ class GrayscaleActivity : AppCompatActivity() {
     }
 
     private external fun getHello(): String
-    private external fun toGrayscaleCpp(bitmap: Bitmap): Bitmap
+    private external fun toGrayscale(bitmap: Bitmap): Bitmap
+    private external fun blur(bitmap: Bitmap, kernelSize: Int): Bitmap
 
     companion object {
         private const val TAG = "CameraXApp"
