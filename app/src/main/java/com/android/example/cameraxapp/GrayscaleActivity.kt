@@ -44,6 +44,8 @@ class GrayscaleActivity : AppCompatActivity() {
 
     private lateinit var cameraExecutor: ExecutorService
 
+    private lateinit var tempBitmap: Bitmap
+
     private val activityResultLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
@@ -220,10 +222,23 @@ class GrayscaleActivity : AppCompatActivity() {
                                 true
                             )
                         image.close()
+                        val size = 256
+                        val newHeight: Int
+                        val newWidth: Int
+                        if (bitmap.height > bitmap.width) {
+                            newWidth = size
+                            newHeight =
+                                (bitmap.height.toFloat() / bitmap.width.toFloat() * size).toInt()
+                        } else {
+                            newHeight = size;
+                            newWidth =
+                                (bitmap.width.toFloat() / bitmap.height.toFloat() * size).toInt()
+                        }
+                        bitmap = Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, false)
+                        tempBitmap = bitmap.copy(bitmap.config, true)
 
-                        Log.d("MainActivity begin", getHello())
 //                        toGrayscale(bitmap)
-                        blur(bitmap, 5)
+                        blur(tempBitmap, bitmap, 5)
 
                         runOnUiThread {
                             viewBinding.viewFinder.setImageBitmap(bitmap)
@@ -282,7 +297,7 @@ class GrayscaleActivity : AppCompatActivity() {
 
     private external fun getHello(): String
     private external fun toGrayscale(bitmap: Bitmap): Bitmap
-    private external fun blur(bitmap: Bitmap, kernelSize: Int): Bitmap
+    private external fun blur(bitmapIn: Bitmap, bitmapOut: Bitmap, kernelSize: Int): Bitmap
 
     companion object {
         private const val TAG = "CameraXApp"
