@@ -208,7 +208,11 @@ class GrayscaleActivity : AppCompatActivity() {
                 .also {
                     it.setAnalyzer(cameraExecutor) { image ->
                         Log.d("image view", "image.format = ${image.format}")
+                        // Get the image bitmap
                         var bitmap = image.toBitmap()
+                        image.close()
+
+                        // Rotate the image if needed
                         val matrix =
                             Matrix().apply { postRotate(image.imageInfo.rotationDegrees.toFloat()) }
                         bitmap =
@@ -221,7 +225,8 @@ class GrayscaleActivity : AppCompatActivity() {
                                 matrix,
                                 true
                             )
-                        image.close()
+
+                        // Resize the image to 256 smaller dim
                         val size = 256
                         val newHeight: Int
                         val newWidth: Int
@@ -235,11 +240,15 @@ class GrayscaleActivity : AppCompatActivity() {
                                 (bitmap.width.toFloat() / bitmap.height.toFloat() * size).toInt()
                         }
                         bitmap = Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, false)
+
+                        // Copy input to temp
                         tempBitmap = bitmap.copy(bitmap.config, true)
 
+                        // Processing logic
 //                        toGrayscale(bitmap)
                         blur(tempBitmap, bitmap, 5)
 
+                        // Render from UI thread
                         runOnUiThread {
                             viewBinding.viewFinder.setImageBitmap(bitmap)
                         }
