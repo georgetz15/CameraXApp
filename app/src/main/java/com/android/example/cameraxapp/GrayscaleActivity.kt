@@ -226,20 +226,7 @@ class GrayscaleActivity : AppCompatActivity() {
                                 true
                             )
 
-                        // Resize the image to 256 smaller dim
-                        val size = 256
-                        val newHeight: Int
-                        val newWidth: Int
-                        if (bitmap.height > bitmap.width) {
-                            newWidth = size
-                            newHeight =
-                                (bitmap.height.toFloat() / bitmap.width.toFloat() * size).toInt()
-                        } else {
-                            newHeight = size;
-                            newWidth =
-                                (bitmap.width.toFloat() / bitmap.height.toFloat() * size).toInt()
-                        }
-                        bitmap = Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, false)
+                        bitmap = resize(bitmap, 256)
 
                         // Copy input to temp
                         tempBitmap = bitmap.copy(bitmap.config, true)
@@ -300,6 +287,7 @@ class GrayscaleActivity : AppCompatActivity() {
         cameraExecutor.shutdown()
     }
 
+    // Image processing
     init {
         System.loadLibrary("cameraxapp")
     }
@@ -307,6 +295,21 @@ class GrayscaleActivity : AppCompatActivity() {
     private external fun getHello(): String
     private external fun toGrayscale(bitmap: Bitmap): Bitmap
     private external fun blur(bitmapIn: Bitmap, bitmapOut: Bitmap, kernelSize: Int): Bitmap
+    private fun resize(bitmap: Bitmap, size: Int = 256): Bitmap {
+        // Resize the image to 256 smaller dim
+        val newHeight: Int
+        val newWidth: Int
+        if (bitmap.height > bitmap.width) {
+            newWidth = size
+            newHeight =
+                (bitmap.height.toFloat() / bitmap.width.toFloat() * size).toInt()
+        } else {
+            newHeight = size
+            newWidth =
+                (bitmap.width.toFloat() / bitmap.height.toFloat() * size).toInt()
+        }
+        return Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, false)
+    }
 
     companion object {
         private const val TAG = "CameraXApp"
