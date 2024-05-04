@@ -226,14 +226,18 @@ class GrayscaleActivity : AppCompatActivity() {
                                 true
                             )
 
-                        bitmap = resize(bitmap, 256)
-
-                        // Copy input to temp
-                        tempBitmap = bitmap.copy(bitmap.config, true)
+                        // Create resized
+                        if (!this::tempBitmap.isInitialized) {
+                            val conf = Bitmap.Config.ARGB_8888 // see other conf types
+                            val (h, w) = resizeShape(256, bitmap.height, bitmap.width)
+                            tempBitmap = Bitmap.createBitmap(w, h, conf)
+                        }
 
                         // Processing logic
-//                        toGrayscale(bitmap)
-                        blur(tempBitmap, bitmap, 5)
+                        bilinearResize(bitmap, tempBitmap)
+                        bitmap = tempBitmap.copy(tempBitmap.config, true)
+                        blur(tempBitmap, bitmap, 3)
+                        toGrayscale(tempBitmap)
 
                         // Render from UI thread
                         runOnUiThread {
@@ -293,22 +297,30 @@ class GrayscaleActivity : AppCompatActivity() {
     }
 
     private external fun getHello(): String
-    private external fun toGrayscale(bitmap: Bitmap): Bitmap
-    private external fun blur(bitmapIn: Bitmap, bitmapOut: Bitmap, kernelSize: Int): Bitmap
+    private external fun toGrayscale(bitmap: Bitmap)
+    private external fun blur(bitmapIn: Bitmap, bitmapOut: Bitmap, kernelSize: Int)
+    private external fun bilinearResize(bitmapIn: Bitmap, bitmapOut: Bitmap)
     private fun resize(bitmap: Bitmap, size: Int = 256): Bitmap {
         // Resize the image to 256 smaller dim
+
+        val (newHeight, newWidth) = resizeShape(size, bitmap.height, bitmap.width)
+        return Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, false)
+    }
+
+    private fun resizeShape(size: Int, oldHeight: Int, oldWidth: Int): Pair<Int, Int> {
         val newHeight: Int
         val newWidth: Int
-        if (bitmap.height > bitmap.width) {
+        if (oldHeight > oldWidth) {
             newWidth = size
             newHeight =
-                (bitmap.height.toFloat() / bitmap.width.toFloat() * size).toInt()
+                (oldHeight.toFloat() / oldWidth.toFloat() * size).toInt()
         } else {
             newHeight = size
             newWidth =
-                (bitmap.width.toFloat() / bitmap.height.toFloat() * size).toInt()
+                (oldWidth.toFloat() / oldHeight.toFloat() * size).toInt()
         }
-        return Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, false)
+
+        return Pair(newHeight, newWidth)
     }
 
     companion object {

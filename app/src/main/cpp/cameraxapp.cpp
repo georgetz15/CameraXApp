@@ -41,7 +41,25 @@ struct RGBA8 {
     uint8_t a;
 };
 
-JNIEXPORT jobject JNICALL
+RGBA8 operator*(const RGBA8 &px, const float &mul) {
+    return {
+            static_cast<uint8_t>(px.r * mul),
+            static_cast<uint8_t>(px.g * mul),
+            static_cast<uint8_t>(px.b * mul),
+            static_cast<uint8_t>(px.a * mul),
+    };
+}
+
+RGBA8 operator+(const RGBA8 &px1, const RGBA8 &px2) {
+    return {
+            static_cast <uint8_t>(px1.r + px2.r),
+            static_cast <uint8_t>(px1.g + px2.g),
+            static_cast <uint8_t>(px1.b + px2.b),
+            static_cast <uint8_t>(px1.a + px2.a),
+    };
+}
+
+JNIEXPORT void JNICALL
 Java_com_android_example_cameraxapp_GrayscaleActivity_toGrayscale(JNIEnv *env, jobject,
                                                                   jobject bitmapIn) {
 
@@ -50,19 +68,19 @@ Java_com_android_example_cameraxapp_GrayscaleActivity_toGrayscale(JNIEnv *env, j
 
     // Get image info
     if (AndroidBitmap_getInfo(env, bitmapIn, &infoIn) != ANDROID_BITMAP_RESULT_SUCCESS) {
-        return env->NewStringUTF("failed");
+//        return env->NewStringUTF("failed");
     }
 
     // Check image
     if (infoIn.format != ANDROID_BITMAP_FORMAT_RGBA_8888) {
-        return env->NewStringUTF(
-                "Only support ANDROID_BITMAP_FORMAT_RGBA_8888");
+//        return env->NewStringUTF(
+//                "Only support ANDROID_BITMAP_FORMAT_RGBA_8888");
     }
 
     // Lock all images
     if (AndroidBitmap_lockPixels(env, bitmapIn, (void **) &pixels) !=
         ANDROID_BITMAP_RESULT_SUCCESS) {
-        return env->NewStringUTF("AndroidBitmap_lockPixels failed!");
+//        return env->NewStringUTF("AndroidBitmap_lockPixels failed!");
     }
 
     auto GS_RED = 0.299;
@@ -83,15 +101,12 @@ Java_com_android_example_cameraxapp_GrayscaleActivity_toGrayscale(JNIEnv *env, j
             auto r = px->r;
             auto g = px->g;
             auto b = px->b;
-
             px->r = px->g = px->b = (GS_RED * r + GS_GREEN * g + GS_BLUE * b);
         }
     }
 
     // Unlocks everything
     AndroidBitmap_unlockPixels(env, bitmapIn);
-
-    return bitmapIn;
 }
 
 struct ImageView {
@@ -134,17 +149,12 @@ struct ImageView {
     }
 };
 
-JNIEXPORT jobject JNICALL
+JNIEXPORT void JNICALL
 Java_com_android_example_cameraxapp_GrayscaleActivity_blur(JNIEnv *env,
                                                            jobject,
                                                            jobject bitmapIn,
                                                            jobject tempBitmap,
                                                            jint kernelSize) {
-
-    auto GS_RED = 0.299;
-    auto GS_GREEN = 0.587;
-    auto GS_BLUE = 0.114;
-
     auto inputImg = ImageView(&bitmapIn, env);
     auto outImg = ImageView(&tempBitmap, env);
     auto inputPixels = inputImg.pixels;
@@ -158,7 +168,8 @@ Java_com_android_example_cameraxapp_GrayscaleActivity_blur(JNIEnv *env,
 #pragma omp parallel for collapse(2)
     for (int y = 0; y < height; ++y) {
         for (int x = 0; x < width; ++x) {
-            double sum = 0;
+            double rs, gs, bs, as;
+            rs = gs = bs = as = 0;
             for (int j = -_kernelSize / 2; j < -_kernelSize / 2 + _kernelSize; ++j) {
                 for (int i = -_kernelSize / 2; i < -_kernelSize / 2 + _kernelSize; ++i) {
                     auto xi = x + i;
@@ -169,19 +180,70 @@ Java_com_android_example_cameraxapp_GrayscaleActivity_blur(JNIEnv *env,
 
                     // retrieve color of all channels
                     auto px = inputPixels[yj * width + xi];
-                    auto r = px.r;
-                    auto g = px.g;
-                    auto b = px.b;
-                    double gray = (GS_RED * r + GS_GREEN * g + GS_BLUE * b);
-                    sum += gray;
+                    rs += px.r;
+                    gs += px.g;
+                    bs += px.b;
+                    as += px.a;
                 }
             }
             auto px = &outputPixels[y * width + x];
-            px->r = px->g = px->b = sum / (_kernelSize * _kernelSize);
+            px->r = rs / (_kernelSize * _kernelSize);
+            px->g = gs / (_kernelSize * _kernelSize);
+            px->b = bs / (_kernelSize * _kernelSize);
+            px->a = as / (_kernelSize * _kernelSize);
         }
     }
-
-    return bitmapIn;
 }
 
-}  // extern "C"
+JNIEXPORT void JNICALL
+Java_com_android_example_cameraxapp_GrayscaleActivity_bilinearResize(JNIEnv *env,
+                                                                     jobject,
+                                                                     jobject bitmapIn,
+                                                                     jobject bitmapOut) {
+    auto inputImg = ImageView(&bitmapIn, env);
+    auto outImg = ImageView(&bitmapOut, env);
+    auto inputPixels = inputImg.pixels;
+    auto outputPixels = outImg.pixels;
+
+    float xRatio, yRatio;
+    if (outImg.width > 1) {
+        xRatio = ((float) inputImg.width - 1.0) / ((float) outImg.width - 1.0);
+    } else {
+        xRatio = 0;
+    }
+
+    if (outImg.height > 1) {
+        yRatio = ((float) inputImg.height - 1.0) / ((float) outImg.height - 1.0);
+    } else {
+        yRatio = 0;
+    }
+
+#pragma omp parallel for collapse(2)
+    for (int y = 0; y < outImg.height; y++) {
+        for (int x = 0; x < outImg.width; x++) {
+            int xLow = floor(xRatio * (float) x);
+            int yLow = floor(yRatio * (float) y);
+            int xHigh = ceil(xRatio * (float) x);
+            int yHigh = ceil(yRatio * (float) y);
+
+            float x_weight = (xRatio * (float) x) - xLow;
+            float y_weight = (yRatio * (float) y) - yLow;
+
+            auto a = inputPixels[yLow * inputImg.width + xLow];
+            auto b = inputPixels[yLow * inputImg.width + xHigh];
+            auto c = inputPixels[yHigh * inputImg.width + xLow];
+            auto d = inputPixels[yHigh * inputImg.width + xHigh];
+
+            auto pixel = a * (1.0f - x_weight) * (1.0f - y_weight) +
+                         b * x_weight * (1.0f - y_weight) +
+                         c * y_weight * (1.0f - x_weight) +
+                         d * x_weight * y_weight;
+
+            outputPixels[y * outImg.width + x] = pixel;
+        }
+    }
+}
+
+}
+
+// extern "C"
