@@ -237,11 +237,13 @@ class GrayscaleActivity : AppCompatActivity() {
 //                        bilinearResize(bitmap, tempBitmap)
                         areaResize(bitmap, tempBitmap)
                         bitmap = tempBitmap.copy(tempBitmap.config, true)
-                        blur(tempBitmap, bitmap, 3)
-//                        toGrayscale(tempBitmap)
+//                        blur(tempBitmap, bitmap, 3)
+//                        toGrayscale(bitmap)
 
                         // Render from UI thread
                         runOnUiThread {
+//                            viewBinding.viewFinder.layoutParams.height = bitmap.height
+//                            viewBinding.viewFinder.layoutParams.width = bitmap.width
                             viewBinding.viewFinder.setImageBitmap(bitmap)
                         }
                     }

@@ -56,6 +56,26 @@ RGBA<T> operator/(const RGBA<T> &px, const float &div) {
 }
 
 template<typename T>
+RGBA<T> operator*(const RGBA<T> &px, const float &mul) {
+    return {
+            static_cast<T>(px.r * mul),
+            static_cast<T>(px.g * mul),
+            static_cast<T>(px.b * mul),
+            static_cast<T>(px.a * mul),
+    };
+}
+
+template<typename T>
+RGBA<T> operator+(const RGBA<T> &px1, const RGBA<T> &px2) {
+    return {
+            static_cast <T>(px1.r + px2.r),
+            static_cast <T>(px1.g + px2.g),
+            static_cast <T>(px1.b + px2.b),
+            static_cast <T>(px1.a + px2.a),
+    };
+}
+
+template<typename T>
 void bilinearInterpolation(const RGBA<T> *input, const int inputWidth, const int inputHeight,
                            RGBA<T> *output, const int outputWidth, const int outputHeight) {
     float xRatio, yRatio;
@@ -121,8 +141,7 @@ void areaResize(const RGBA<T> *input,
                     if (xi < 0 || inputWidth <= xi || yi < 0 || inputHeight <= yi) {
                         continue;
                     }
-                    auto px = input[yi * inputWidth
-                                    + xi];
+                    auto px = input[yi * inputWidth + xi];
                     sum.r += px.r;
                     sum.g += px.g;
                     sum.b += px.b;
@@ -143,25 +162,6 @@ Java_com_android_example_cameraxapp_GrayscaleActivity_getHello(JNIEnv *env, jobj
     const auto hello = getHello();
     jstring result = env->NewStringUTF(hello.c_str());
     return result;
-}
-
-
-RGBA8 operator*(const RGBA8 &px, const float &mul) {
-    return {
-            static_cast<uint8_t>(px.r * mul),
-            static_cast<uint8_t>(px.g * mul),
-            static_cast<uint8_t>(px.b * mul),
-            static_cast<uint8_t>(px.a * mul),
-    };
-}
-
-RGBA8 operator+(const RGBA8 &px1, const RGBA8 &px2) {
-    return {
-            static_cast <uint8_t>(px1.r + px2.r),
-            static_cast <uint8_t>(px1.g + px2.g),
-            static_cast <uint8_t>(px1.b + px2.b),
-            static_cast <uint8_t>(px1.a + px2.a),
-    };
 }
 
 JNIEXPORT void JNICALL
