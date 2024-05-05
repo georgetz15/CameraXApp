@@ -234,10 +234,11 @@ class GrayscaleActivity : AppCompatActivity() {
                         }
 
                         // Processing logic
-                        bilinearResize(bitmap, tempBitmap)
+//                        bilinearResize(bitmap, tempBitmap)
+                        areaResize(bitmap, tempBitmap)
                         bitmap = tempBitmap.copy(tempBitmap.config, true)
                         blur(tempBitmap, bitmap, 3)
-                        toGrayscale(tempBitmap)
+//                        toGrayscale(tempBitmap)
 
                         // Render from UI thread
                         runOnUiThread {
@@ -300,6 +301,7 @@ class GrayscaleActivity : AppCompatActivity() {
     private external fun toGrayscale(bitmap: Bitmap)
     private external fun blur(bitmapIn: Bitmap, bitmapOut: Bitmap, kernelSize: Int)
     private external fun bilinearResize(bitmapIn: Bitmap, bitmapOut: Bitmap)
+    private external fun areaResize(bitmapIn: Bitmap, bitmapOut: Bitmap)
     private fun resize(bitmap: Bitmap, size: Int = 256): Bitmap {
         // Resize the image to 256 smaller dim
 

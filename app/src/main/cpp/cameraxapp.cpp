@@ -26,7 +26,118 @@ std::string getHello() {
     return "Hello";
 }
 
+template<typename T>
+struct RGBA {
+    T r;
+    T g;
+    T b;
+    T a;
+
+    template<typename O>
+    operator RGBA<O>() {
+        return {
+                static_cast<O>(r),
+                static_cast<O>(g),
+                static_cast<O>(b),
+                static_cast<O>(a),
+        };
+    }
+};
+
+
+template<typename T>
+RGBA<T> operator/(const RGBA<T> &px, const float &div) {
+    return {
+            static_cast<T>(px.r / div),
+            static_cast<T>(px.g / div),
+            static_cast<T>(px.b / div),
+            static_cast<T>(px.a / div),
+    };
+}
+
+template<typename T>
+void bilinearInterpolation(const RGBA<T> *input, const int inputWidth, const int inputHeight,
+                           RGBA<T> *output, const int outputWidth, const int outputHeight) {
+    float xRatio, yRatio;
+    if (outputWidth > 1) {
+        xRatio = ((float) inputWidth - 1.0) / ((float) outputWidth - 1.0);
+    } else {
+        xRatio = 0;
+    }
+
+    if (outputHeight > 1) {
+        yRatio = ((float) inputHeight - 1.0) / ((float) outputHeight - 1.0);
+    } else {
+        yRatio = 0;
+    }
+
+#pragma omp parallel for collapse(2)
+    for (int y = 0; y < outputHeight; y++) {
+        for (int x = 0; x < outputWidth; x++) {
+            int xLow = floor(xRatio * (float) x);
+            int yLow = floor(yRatio * (float) y);
+            int xHigh = ceil(xRatio * (float) x);
+            int yHigh = ceil(yRatio * (float) y);
+
+            float x_weight = (xRatio * (float) x) - xLow;
+            float y_weight = (yRatio * (float) y) - yLow;
+
+            auto a = input[yLow * inputWidth + xLow];
+            auto b = input[yLow * inputWidth + xHigh];
+            auto c = input[yHigh * inputWidth + xLow];
+            auto d = input[yHigh * inputWidth + xHigh];
+
+            auto pixel = a * (1.0f - x_weight) * (1.0f - y_weight) +
+                         b * x_weight * (1.0f - y_weight) +
+                         c * y_weight * (1.0f - x_weight) +
+                         d * x_weight * y_weight;
+
+            output[y * outputWidth + x] = pixel;
+        }
+    }
+}
+
+template<typename T>
+void areaResize(const RGBA<T> *input,
+                const int inputWidth,
+                const int inputHeight,
+                RGBA<T> *output,
+                const int outputWidth,
+                const int outputHeight) {
+    const float xStep = (float) inputWidth / outputWidth;
+    const float yStep = (float) inputHeight / outputHeight;
+    const int kernelWidth = ceil(xStep);
+    const int kernelHeight = ceil(yStep);
+    const float area = (kernelWidth * kernelHeight);
+
+#pragma omp parallel for collapse(2)
+    for (int y = 0; y < outputHeight; y++) {
+        for (int x = 0; x < outputWidth; x++) {
+            RGBA<float> sum = {0, 0, 0, 0};
+            for (int j = 0; j < kernelHeight; ++j) {
+                for (int i = 0; i < kernelWidth; ++i) {
+                    const int yi = (y * yStep + j);
+                    const int xi = (x * xStep + i);
+                    if (xi < 0 || inputWidth <= xi || yi < 0 || inputHeight <= yi) {
+                        continue;
+                    }
+                    auto px = input[yi * inputWidth
+                                    + xi];
+                    sum.r += px.r;
+                    sum.g += px.g;
+                    sum.b += px.b;
+                    sum.a += px.a;
+                }
+            }
+
+            output[y * outputWidth + x] = sum / area;
+        }
+    }
+}
+
 extern "C" {
+typedef RGBA<uint8_t> RGBA8;
+
 JNIEXPORT jstring JNICALL
 Java_com_android_example_cameraxapp_GrayscaleActivity_getHello(JNIEnv *env, jobject) {
     const auto hello = getHello();
@@ -34,12 +145,6 @@ Java_com_android_example_cameraxapp_GrayscaleActivity_getHello(JNIEnv *env, jobj
     return result;
 }
 
-struct RGBA8 {
-    uint8_t r;
-    uint8_t g;
-    uint8_t b;
-    uint8_t a;
-};
 
 RGBA8 operator*(const RGBA8 &px, const float &mul) {
     return {
@@ -202,47 +307,31 @@ Java_com_android_example_cameraxapp_GrayscaleActivity_bilinearResize(JNIEnv *env
                                                                      jobject bitmapOut) {
     auto inputImg = ImageView(&bitmapIn, env);
     auto outImg = ImageView(&bitmapOut, env);
-    auto inputPixels = inputImg.pixels;
-    auto outputPixels = outImg.pixels;
 
-    float xRatio, yRatio;
-    if (outImg.width > 1) {
-        xRatio = ((float) inputImg.width - 1.0) / ((float) outImg.width - 1.0);
-    } else {
-        xRatio = 0;
-    }
-
-    if (outImg.height > 1) {
-        yRatio = ((float) inputImg.height - 1.0) / ((float) outImg.height - 1.0);
-    } else {
-        yRatio = 0;
-    }
-
-#pragma omp parallel for collapse(2)
-    for (int y = 0; y < outImg.height; y++) {
-        for (int x = 0; x < outImg.width; x++) {
-            int xLow = floor(xRatio * (float) x);
-            int yLow = floor(yRatio * (float) y);
-            int xHigh = ceil(xRatio * (float) x);
-            int yHigh = ceil(yRatio * (float) y);
-
-            float x_weight = (xRatio * (float) x) - xLow;
-            float y_weight = (yRatio * (float) y) - yLow;
-
-            auto a = inputPixels[yLow * inputImg.width + xLow];
-            auto b = inputPixels[yLow * inputImg.width + xHigh];
-            auto c = inputPixels[yHigh * inputImg.width + xLow];
-            auto d = inputPixels[yHigh * inputImg.width + xHigh];
-
-            auto pixel = a * (1.0f - x_weight) * (1.0f - y_weight) +
-                         b * x_weight * (1.0f - y_weight) +
-                         c * y_weight * (1.0f - x_weight) +
-                         d * x_weight * y_weight;
-
-            outputPixels[y * outImg.width + x] = pixel;
-        }
-    }
+    bilinearInterpolation(inputImg.pixels,
+                          inputImg.width,
+                          inputImg.height,
+                          outImg.pixels,
+                          outImg.width,
+                          outImg.height);
 }
+
+JNIEXPORT void JNICALL
+Java_com_android_example_cameraxapp_GrayscaleActivity_areaResize(JNIEnv *env,
+                                                                 jobject,
+                                                                 jobject bitmapIn,
+                                                                 jobject bitmapOut) {
+    auto inputImg = ImageView(&bitmapIn, env);
+    auto outImg = ImageView(&bitmapOut, env);
+
+    areaResize(inputImg.pixels,
+               inputImg.width,
+               inputImg.height,
+               outImg.pixels,
+               outImg.width,
+               outImg.height);
+}
+
 
 }
 
