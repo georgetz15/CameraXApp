@@ -8,7 +8,7 @@ import androidx.appcompat.app.AppCompatActivity
 
 class ActivitySelector : AppCompatActivity() {
 
-    private val activities = arrayOf("Grayscale")
+    private val activities = arrayOf("Resampling")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -20,7 +20,7 @@ class ActivitySelector : AppCompatActivity() {
                 it.setAdapter(adapter)
                 it.setOnItemClickListener { parent, view, position, id ->
                     val targetActivity = when (position) {
-                        0 -> GrayscaleActivity::class.java
+                        0 -> ResamplingActivity::class.java
                         else -> null
                     }
 

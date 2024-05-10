@@ -29,7 +29,7 @@ import androidx.camera.video.VideoCapture
 import androidx.camera.video.VideoRecordEvent
 import androidx.core.content.ContextCompat
 import androidx.core.content.PermissionChecker
-import com.android.example.cameraxapp.databinding.ActivityMainBinding
+import com.android.example.cameraxapp.databinding.ActivityResampleBinding
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.ExecutorService
@@ -44,9 +44,9 @@ enum class ResamplingMethod(val value: Int) {
     }
 }
 
-class GrayscaleActivity : AppCompatActivity() {
+class ResamplingActivity : AppCompatActivity() {
 
-    private lateinit var viewBinding: ActivityMainBinding
+    private lateinit var viewBinding: ActivityResampleBinding
 
     private var imageCapture: ImageCapture? = null
 
@@ -78,7 +78,7 @@ class GrayscaleActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        viewBinding = ActivityMainBinding.inflate(layoutInflater)
+        viewBinding = ActivityResampleBinding.inflate(layoutInflater)
         setContentView(viewBinding.root)
 
         // Request camera permissions
@@ -111,7 +111,7 @@ class GrayscaleActivity : AppCompatActivity() {
                     id: Long
                 ) {
                     Toast.makeText(
-                        this@GrayscaleActivity,
+                        this@ResamplingActivity,
                         "Selected " + resamplingMethods[position], Toast.LENGTH_SHORT
                     ).show()
 
@@ -193,7 +193,7 @@ class GrayscaleActivity : AppCompatActivity() {
             .prepareRecording(this, mediaStoreOutputOptions)
             .apply {
                 if (PermissionChecker.checkSelfPermission(
-                        this@GrayscaleActivity,
+                        this@ResamplingActivity,
                         Manifest.permission.RECORD_AUDIO
                     ) ==
                     PermissionChecker.PERMISSION_GRANTED
