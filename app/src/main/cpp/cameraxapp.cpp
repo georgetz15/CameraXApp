@@ -68,10 +68,10 @@ RGBA<T> operator*(const RGBA<T> &px, const float &mul) {
 template<typename T>
 RGBA<T> operator+(const RGBA<T> &px1, const RGBA<T> &px2) {
     return {
-            static_cast <T>(px1.r + px2.r),
-            static_cast <T>(px1.g + px2.g),
-            static_cast <T>(px1.b + px2.b),
-            static_cast <T>(px1.a + px2.a),
+            static_cast<T>(px1.r + px2.r),
+            static_cast<T>(px1.g + px2.g),
+            static_cast<T>(px1.b + px2.b),
+            static_cast<T>(px1.a + px2.a),
     };
 }
 
