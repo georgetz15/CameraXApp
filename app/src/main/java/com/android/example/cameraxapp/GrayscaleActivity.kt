@@ -9,6 +9,7 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
+import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -81,6 +82,30 @@ class GrayscaleActivity : AppCompatActivity() {
         viewBinding.videoCaptureButton.setOnClickListener { captureVideo() }
 
         cameraExecutor = Executors.newSingleThreadExecutor()
+
+        // Spinner
+        val resamplingMethods = resources.getStringArray(R.array.ResamplingMethods)
+        val spinner = viewBinding.resamplingMethodSpinner;
+        if (spinner != null) {
+            val adapter = ArrayAdapter(
+                this,
+                android.R.layout.simple_spinner_item, resamplingMethods
+            )
+            spinner.adapter = adapter
+//            spinner.onItemSelectedListener = object :
+//                AdapterView.OnItemSelectedListener {
+//                override fun onItemSelected(parent: AdapterView<*>,
+//                                            view: View, position: Int, id: Long) {
+//                    Toast.makeText(this@MainActivity,
+//                        getString(R.string.selected_item) + " " +
+//                                "" + languages[position], Toast.LENGTH_SHORT).show()
+//                }
+//
+//                override fun onNothingSelected(parent: AdapterView<*>) {
+//                    // write code to perform some action
+//                }
+//            }
+        }
     }
 
     private fun takePhoto() {// Get a stable reference of the modifiable image capture use case
