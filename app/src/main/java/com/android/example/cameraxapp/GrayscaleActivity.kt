@@ -9,6 +9,8 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
+import android.view.View
+import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -34,6 +36,14 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
 
+enum class ResamplingMethod(val value: Int) {
+    BILINEAR(0), AREA(1);
+
+    companion object {
+        fun fromInt(value: Int) = entries.first { it.value == value }
+    }
+}
+
 class GrayscaleActivity : AppCompatActivity() {
 
     private lateinit var viewBinding: ActivityMainBinding
@@ -46,6 +56,7 @@ class GrayscaleActivity : AppCompatActivity() {
     private lateinit var cameraExecutor: ExecutorService
 
     private lateinit var tempBitmap: Bitmap
+    private lateinit var resamplingMethod: ResamplingMethod
 
     private val activityResultLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -92,19 +103,25 @@ class GrayscaleActivity : AppCompatActivity() {
                 android.R.layout.simple_spinner_item, resamplingMethods
             )
             spinner.adapter = adapter
-//            spinner.onItemSelectedListener = object :
-//                AdapterView.OnItemSelectedListener {
-//                override fun onItemSelected(parent: AdapterView<*>,
-//                                            view: View, position: Int, id: Long) {
-//                    Toast.makeText(this@MainActivity,
-//                        getString(R.string.selected_item) + " " +
-//                                "" + languages[position], Toast.LENGTH_SHORT).show()
-//                }
-//
-//                override fun onNothingSelected(parent: AdapterView<*>) {
-//                    // write code to perform some action
-//                }
-//            }
+            spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(
+                    parent: AdapterView<*>?,
+                    view: View?,
+                    position: Int,
+                    id: Long
+                ) {
+                    Toast.makeText(
+                        this@GrayscaleActivity,
+                        "Selected " + resamplingMethods[position], Toast.LENGTH_SHORT
+                    ).show()
+
+                    resamplingMethod = ResamplingMethod.fromInt(position)
+                }
+
+                override fun onNothingSelected(parent: AdapterView<*>?) {
+                    TODO("Not yet implemented")
+                }
+            }
         }
     }
 
@@ -259,11 +276,12 @@ class GrayscaleActivity : AppCompatActivity() {
                         }
 
                         // Processing logic
-//                        bilinearResize(bitmap, tempBitmap)
-                        areaResize(bitmap, tempBitmap)
+                        when (resamplingMethod) {
+                            ResamplingMethod.BILINEAR -> bilinearResize(bitmap, tempBitmap)
+                            ResamplingMethod.AREA -> areaResize(bitmap, tempBitmap)
+                        }
+
                         bitmap = tempBitmap.copy(tempBitmap.config, true)
-//                        blur(tempBitmap, bitmap, 3)
-//                        toGrayscale(bitmap)
 
                         // Render from UI thread
                         runOnUiThread {
