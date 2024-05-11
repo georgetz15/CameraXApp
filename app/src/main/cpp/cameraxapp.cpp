@@ -21,91 +21,12 @@
 #include <android/bitmap.h>
 #include <omp.h>
 #include <vector>
+#include "ImageTypes.h"
 
-std::string getHello() {
-    return "Hello";
-}
 
 template<typename T>
-struct RGBA {
-    T r;
-    T g;
-    T b;
-    T a;
-
-    template<typename O>
-    operator RGBA<O>() {
-        return {
-                static_cast<O>(r),
-                static_cast<O>(g),
-                static_cast<O>(b),
-                static_cast<O>(a),
-        };
-    }
-
-    template<typename O,
-            typename = typename std::enable_if<std::is_arithmetic<O>::value, T>::type>
-    RGBA<T> &operator=(const O &other) {
-        r = g = b = a = static_cast<O>(other);
-        return *this;
-    }
-
-    void clamp() {
-        r = std::clamp(r, 0, 255);
-        g = std::clamp(g, 0, 255);
-        b = std::clamp(b, 0, 255);
-        a = std::clamp(a, 0, 255);
-    }
-};
-
-template<typename T>
-RGBA<T> operator/(const RGBA<T> &px, const float &div) {
-    return {
-            static_cast<T>(px.r / div),
-            static_cast<T>(px.g / div),
-            static_cast<T>(px.b / div),
-            static_cast<T>(px.a / div),
-    };
-}
-
-template<typename T>
-RGBA<T> operator*(const RGBA<T> &px, const float &mul) {
-    return {
-            static_cast<T>(px.r * mul),
-            static_cast<T>(px.g * mul),
-            static_cast<T>(px.b * mul),
-            static_cast<T>(px.a * mul),
-    };
-}
-
-template<typename T>
-RGBA<T> operator+(const RGBA<T> &px1, const RGBA<T> &px2) {
-    return {
-            static_cast<T>(px1.r + px2.r),
-            static_cast<T>(px1.g + px2.g),
-            static_cast<T>(px1.b + px2.b),
-            static_cast<T>(px1.a + px2.a),
-    };
-}
-
-template<typename T, typename O>
-RGBA<T> &operator+=(RGBA<T> &px1, RGBA<O> &px2) {
-    RGBA<T> temp = static_cast<RGBA<T>>(px2);
-    px1 = px1 + temp;
-    return px1;
-}
-
-template<typename T,
-        typename O,
-        typename = typename std::enable_if<std::is_arithmetic<O>::value, T>::type>
-RGBA<T> &operator/=(RGBA<T> &px1, const O &num) {
-    px1 = px1 / static_cast<T>(num);
-    return px1;
-}
-
-template<typename T>
-void bilinearInterpolation(const RGBA<T> *input, const int inputWidth, const int inputHeight,
-                           RGBA<T> *output, const int outputWidth, const int outputHeight) {
+void bilinearInterpolation(const rgba<T> *input, const int inputWidth, const int inputHeight,
+                           rgba<T> *output, const int outputWidth, const int outputHeight) {
     float xRatio, yRatio;
     if (outputWidth > 1) {
         xRatio = ((float) inputWidth - 1.0) / ((float) outputWidth - 1.0);
@@ -146,10 +67,10 @@ void bilinearInterpolation(const RGBA<T> *input, const int inputWidth, const int
 }
 
 template<typename T>
-void areaResize(const RGBA<T> *input,
+void areaResize(const rgba<T> *input,
                 const int inputWidth,
                 const int inputHeight,
-                RGBA<T> *output,
+                rgba<T> *output,
                 const int outputWidth,
                 const int outputHeight) {
     const float xStep = (float) inputWidth / outputWidth;
@@ -161,7 +82,7 @@ void areaResize(const RGBA<T> *input,
 #pragma omp parallel for collapse(2)
     for (int y = 0; y < outputHeight; y++) {
         for (int x = 0; x < outputWidth; x++) {
-            RGBA<float> sum = {0, 0, 0, 0};
+            rgba16u sum = {0, 0, 0, 0};
             for (int j = 0; j < kernelHeight; ++j) {
                 for (int i = 0; i < kernelWidth; ++i) {
                     const int yi = (y * yStep + j);
@@ -183,7 +104,6 @@ void areaResize(const RGBA<T> *input,
 }
 
 extern "C" {
-typedef RGBA<uint8_t> RGBA8;
 
 JNIEXPORT void JNICALL
 Java_com_android_example_cameraxapp_ImageProcessing_toGrayscale(JNIEnv *env,
@@ -191,7 +111,7 @@ Java_com_android_example_cameraxapp_ImageProcessing_toGrayscale(JNIEnv *env,
                                                                 jobject bitmapIn) {
 
     AndroidBitmapInfo infoIn;
-    RGBA8 *pixels;
+    rgba8u *pixels;
 
     // Get image info
     if (AndroidBitmap_getInfo(env, bitmapIn, &infoIn) != ANDROID_BITMAP_RESULT_SUCCESS) {
@@ -235,7 +155,7 @@ Java_com_android_example_cameraxapp_ImageProcessing_toGrayscale(JNIEnv *env,
 }
 
 struct ImageView {
-    RGBA8 *pixels;
+    rgba8u *pixels;
     uint width;
     uint height;
     jobject *bitmap{nullptr};
@@ -273,7 +193,7 @@ struct ImageView {
         AndroidBitmap_unlockPixels(this->env, *this->bitmap);
     }
 
-    RGBA8 &operator()(const int &x, const int &y) {
+    rgba8u &operator()(const int &x, const int &y) {
         return pixels[y * width + x];
     }
 };
@@ -295,7 +215,7 @@ Java_com_android_example_cameraxapp_ImageProcessing_boxBlur(JNIEnv *env,
 #pragma omp parallel for collapse(2)
     for (int y = 0; y < height; ++y) {
         for (int x = 0; x < width; ++x) {
-            RGBA<uint16_t> out;
+            rgba16u out;
             out = 0;
             for (int j = -_kernelSize / 2; j < -_kernelSize / 2 + _kernelSize; ++j) {
                 for (int i = -_kernelSize / 2; i < -_kernelSize / 2 + _kernelSize; ++i) {
