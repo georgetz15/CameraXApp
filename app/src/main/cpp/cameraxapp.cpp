@@ -42,8 +42,21 @@ struct RGBA {
                 static_cast<O>(a),
         };
     }
-};
 
+    template<typename O,
+            typename = typename std::enable_if<std::is_arithmetic<O>::value, T>::type>
+    RGBA<T> &operator=(const O &other) {
+        r = g = b = a = static_cast<O>(other);
+        return *this;
+    }
+
+    void clamp() {
+        r = std::clamp(r, 0, 255);
+        g = std::clamp(g, 0, 255);
+        b = std::clamp(b, 0, 255);
+        a = std::clamp(a, 0, 255);
+    }
+};
 
 template<typename T>
 RGBA<T> operator/(const RGBA<T> &px, const float &div) {
@@ -73,6 +86,21 @@ RGBA<T> operator+(const RGBA<T> &px1, const RGBA<T> &px2) {
             static_cast<T>(px1.b + px2.b),
             static_cast<T>(px1.a + px2.a),
     };
+}
+
+template<typename T, typename O>
+RGBA<T> &operator+=(RGBA<T> &px1, RGBA<O> &px2) {
+    RGBA<T> temp = static_cast<RGBA<T>>(px2);
+    px1 = px1 + temp;
+    return px1;
+}
+
+template<typename T,
+        typename O,
+        typename = typename std::enable_if<std::is_arithmetic<O>::value, T>::type>
+RGBA<T> &operator/=(RGBA<T> &px1, const O &num) {
+    px1 = px1 / static_cast<T>(num);
+    return px1;
 }
 
 template<typename T>
@@ -157,16 +185,10 @@ void areaResize(const RGBA<T> *input,
 extern "C" {
 typedef RGBA<uint8_t> RGBA8;
 
-JNIEXPORT jstring JNICALL
-Java_com_android_example_cameraxapp_ImageProcessing_getHello(JNIEnv *env, jobject) {
-    const auto hello = getHello();
-    jstring result = env->NewStringUTF(hello.c_str());
-    return result;
-}
-
 JNIEXPORT void JNICALL
-Java_com_android_example_cameraxapp_ImageProcessing_toGrayscale(JNIEnv *env, jobject,
-                                                                   jobject bitmapIn) {
+Java_com_android_example_cameraxapp_ImageProcessing_toGrayscale(JNIEnv *env,
+                                                                jobject,
+                                                                jobject bitmapIn) {
 
     AndroidBitmapInfo infoIn;
     RGBA8 *pixels;
@@ -192,8 +214,6 @@ Java_com_android_example_cameraxapp_ImageProcessing_toGrayscale(JNIEnv *env, job
     auto GS_GREEN = 0.587;
     auto GS_BLUE = 0.114;
 
-    // get image size
-    // get image size
     int width = infoIn.width;
     int height = infoIn.height;
 
@@ -252,18 +272,20 @@ struct ImageView {
     ~ImageView() {
         AndroidBitmap_unlockPixels(this->env, *this->bitmap);
     }
+
+    RGBA8 &operator()(const int &x, const int &y) {
+        return pixels[y * width + x];
+    }
 };
 
 JNIEXPORT void JNICALL
-Java_com_android_example_cameraxapp_ImageProcessing_blur(JNIEnv *env,
+Java_com_android_example_cameraxapp_ImageProcessing_boxBlur(JNIEnv *env,
                                                             jobject,
                                                             jobject bitmapIn,
                                                             jobject tempBitmap,
                                                             jint kernelSize) {
     auto inputImg = ImageView(&bitmapIn, env);
     auto outImg = ImageView(&tempBitmap, env);
-    auto inputPixels = inputImg.pixels;
-    auto outputPixels = outImg.pixels;
     auto width = inputImg.width;
     auto height = inputImg.height;
 
@@ -273,8 +295,8 @@ Java_com_android_example_cameraxapp_ImageProcessing_blur(JNIEnv *env,
 #pragma omp parallel for collapse(2)
     for (int y = 0; y < height; ++y) {
         for (int x = 0; x < width; ++x) {
-            double rs, gs, bs, as;
-            rs = gs = bs = as = 0;
+            RGBA<uint16_t> out;
+            out = 0;
             for (int j = -_kernelSize / 2; j < -_kernelSize / 2 + _kernelSize; ++j) {
                 for (int i = -_kernelSize / 2; i < -_kernelSize / 2 + _kernelSize; ++i) {
                     auto xi = x + i;
@@ -284,27 +306,23 @@ Java_com_android_example_cameraxapp_ImageProcessing_blur(JNIEnv *env,
                     }
 
                     // retrieve color of all channels
-                    auto px = inputPixels[yj * width + xi];
-                    rs += px.r;
-                    gs += px.g;
-                    bs += px.b;
-                    as += px.a;
+                    auto &px = inputImg(xi, yj);
+                    out.r += px.r;
+                    out.g += px.g;
+                    out.b += px.b;
                 }
             }
-            auto px = &outputPixels[y * width + x];
-            px->r = rs / (_kernelSize * _kernelSize);
-            px->g = gs / (_kernelSize * _kernelSize);
-            px->b = bs / (_kernelSize * _kernelSize);
-            px->a = as / (_kernelSize * _kernelSize);
+            outImg(x, y) = out / (_kernelSize * _kernelSize);
+            outImg(x, y).a = inputImg(x, y).a;
         }
     }
 }
 
 JNIEXPORT void JNICALL
 Java_com_android_example_cameraxapp_ImageProcessing_bilinearResize(JNIEnv *env,
-                                                                      jobject,
-                                                                      jobject bitmapIn,
-                                                                      jobject bitmapOut) {
+                                                                   jobject,
+                                                                   jobject bitmapIn,
+                                                                   jobject bitmapOut) {
     auto inputImg = ImageView(&bitmapIn, env);
     auto outImg = ImageView(&bitmapOut, env);
 
@@ -318,9 +336,9 @@ Java_com_android_example_cameraxapp_ImageProcessing_bilinearResize(JNIEnv *env,
 
 JNIEXPORT void JNICALL
 Java_com_android_example_cameraxapp_ImageProcessing_areaResize(JNIEnv *env,
-                                                                  jobject,
-                                                                  jobject bitmapIn,
-                                                                  jobject bitmapOut) {
+                                                               jobject,
+                                                               jobject bitmapIn,
+                                                               jobject bitmapOut) {
     auto inputImg = ImageView(&bitmapIn, env);
     auto outImg = ImageView(&bitmapOut, env);
 

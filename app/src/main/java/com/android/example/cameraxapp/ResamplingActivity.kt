@@ -31,6 +31,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.PermissionChecker
 import com.android.example.cameraxapp.ImageProcessing.areaResize
 import com.android.example.cameraxapp.ImageProcessing.bilinearResize
+import com.android.example.cameraxapp.ImageProcessing.resizeShape
 import com.android.example.cameraxapp.databinding.ActivityResampleBinding
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -337,22 +338,6 @@ class ResamplingActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         cameraExecutor.shutdown()
-    }
-
-    private fun resizeShape(size: Int, oldHeight: Int, oldWidth: Int): Pair<Int, Int> {
-        val newHeight: Int
-        val newWidth: Int
-        if (oldHeight > oldWidth) {
-            newWidth = size
-            newHeight =
-                (oldHeight.toFloat() / oldWidth.toFloat() * size).toInt()
-        } else {
-            newHeight = size
-            newWidth =
-                (oldWidth.toFloat() / oldHeight.toFloat() * size).toInt()
-        }
-
-        return Pair(newHeight, newWidth)
     }
 
     companion object {

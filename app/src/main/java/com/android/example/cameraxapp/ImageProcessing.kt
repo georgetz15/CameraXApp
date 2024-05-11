@@ -8,7 +8,23 @@ object ImageProcessing {
     }
 
     external fun toGrayscale(bitmap: Bitmap)
-    external fun blur(bitmapIn: Bitmap, bitmapOut: Bitmap, kernelSize: Int)
+    external fun boxBlur(bitmapIn: Bitmap, bitmapOut: Bitmap, kernelSize: Int)
     external fun bilinearResize(bitmapIn: Bitmap, bitmapOut: Bitmap)
     external fun areaResize(bitmapIn: Bitmap, bitmapOut: Bitmap)
+
+    fun resizeShape(size: Int, oldHeight: Int, oldWidth: Int): Pair<Int, Int> {
+        val newHeight: Int
+        val newWidth: Int
+        if (oldHeight > oldWidth) {
+            newWidth = size
+            newHeight =
+                (oldHeight.toFloat() / oldWidth.toFloat() * size).toInt()
+        } else {
+            newHeight = size
+            newWidth =
+                (oldWidth.toFloat() / oldHeight.toFloat() * size).toInt()
+        }
+
+        return Pair(newHeight, newWidth)
+    }
 }

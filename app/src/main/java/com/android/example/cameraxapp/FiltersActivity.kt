@@ -23,6 +23,10 @@ import androidx.camera.video.Recorder
 import androidx.camera.video.Recording
 import androidx.camera.video.VideoCapture
 import androidx.core.content.ContextCompat
+import com.android.example.cameraxapp.ImageProcessing.areaResize
+import com.android.example.cameraxapp.ImageProcessing.bilinearResize
+import com.android.example.cameraxapp.ImageProcessing.boxBlur
+import com.android.example.cameraxapp.ImageProcessing.resizeShape
 import com.android.example.cameraxapp.ImageProcessing.toGrayscale
 import com.android.example.cameraxapp.databinding.ActivityFiltersBinding
 import java.util.concurrent.ExecutorService
@@ -30,7 +34,8 @@ import java.util.concurrent.Executors
 
 
 enum class FilterMethod(val value: Int) {
-    GRAY(0), ;
+    GRAY(0),
+    BLUR(1), ;
 
     companion object {
         fun fromInt(value: Int) = entries.first { it.value == value }
@@ -146,10 +151,22 @@ class FiltersActivity : AppCompatActivity() {
                                 matrix,
                                 true
                             )
+                        // Create resized
+                        val conf = Bitmap.Config.ARGB_8888 // see other conf types
+                        val (h, w) = resizeShape(256, bitmap.height, bitmap.width)
+                        if (!this::tempBitmap.isInitialized) {
+                            tempBitmap = Bitmap.createBitmap(w, h, conf)
+                        }
+                        areaResize(bitmap, tempBitmap)
+                        bitmap = tempBitmap.copy(tempBitmap.config, true)
 
                         when (filterMethod) {
                             FilterMethod.GRAY -> {
                                 toGrayscale(bitmap)
+                            }
+
+                            FilterMethod.BLUR -> {
+                                boxBlur(tempBitmap, bitmap, 4)
                             }
                         }
 
