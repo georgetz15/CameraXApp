@@ -158,14 +158,14 @@ extern "C" {
 typedef RGBA<uint8_t> RGBA8;
 
 JNIEXPORT jstring JNICALL
-Java_com_android_example_cameraxapp_ResamplingActivity_getHello(JNIEnv *env, jobject) {
+Java_com_android_example_cameraxapp_ImageProcessing_getHello(JNIEnv *env, jobject) {
     const auto hello = getHello();
     jstring result = env->NewStringUTF(hello.c_str());
     return result;
 }
 
 JNIEXPORT void JNICALL
-Java_com_android_example_cameraxapp_ResamplingActivity_toGrayscale(JNIEnv *env, jobject,
+Java_com_android_example_cameraxapp_ImageProcessing_toGrayscale(JNIEnv *env, jobject,
                                                                    jobject bitmapIn) {
 
     AndroidBitmapInfo infoIn;
@@ -255,7 +255,7 @@ struct ImageView {
 };
 
 JNIEXPORT void JNICALL
-Java_com_android_example_cameraxapp_ResamplingActivity_blur(JNIEnv *env,
+Java_com_android_example_cameraxapp_ImageProcessing_blur(JNIEnv *env,
                                                             jobject,
                                                             jobject bitmapIn,
                                                             jobject tempBitmap,
@@ -301,7 +301,7 @@ Java_com_android_example_cameraxapp_ResamplingActivity_blur(JNIEnv *env,
 }
 
 JNIEXPORT void JNICALL
-Java_com_android_example_cameraxapp_ResamplingActivity_bilinearResize(JNIEnv *env,
+Java_com_android_example_cameraxapp_ImageProcessing_bilinearResize(JNIEnv *env,
                                                                       jobject,
                                                                       jobject bitmapIn,
                                                                       jobject bitmapOut) {
@@ -317,7 +317,7 @@ Java_com_android_example_cameraxapp_ResamplingActivity_bilinearResize(JNIEnv *en
 }
 
 JNIEXPORT void JNICALL
-Java_com_android_example_cameraxapp_ResamplingActivity_areaResize(JNIEnv *env,
+Java_com_android_example_cameraxapp_ImageProcessing_areaResize(JNIEnv *env,
                                                                   jobject,
                                                                   jobject bitmapIn,
                                                                   jobject bitmapOut) {
@@ -333,6 +333,4 @@ Java_com_android_example_cameraxapp_ResamplingActivity_areaResize(JNIEnv *env,
 }
 
 
-}
-
-// extern "C"
+} // extern "C"

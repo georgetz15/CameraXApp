@@ -29,6 +29,8 @@ import androidx.camera.video.VideoCapture
 import androidx.camera.video.VideoRecordEvent
 import androidx.core.content.ContextCompat
 import androidx.core.content.PermissionChecker
+import com.android.example.cameraxapp.ImageProcessing.areaResize
+import com.android.example.cameraxapp.ImageProcessing.bilinearResize
 import com.android.example.cameraxapp.databinding.ActivityResampleBinding
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -335,23 +337,6 @@ class ResamplingActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         cameraExecutor.shutdown()
-    }
-
-    // Image processing
-    init {
-        System.loadLibrary("cameraxapp")
-    }
-
-    private external fun getHello(): String
-    private external fun toGrayscale(bitmap: Bitmap)
-    private external fun blur(bitmapIn: Bitmap, bitmapOut: Bitmap, kernelSize: Int)
-    private external fun bilinearResize(bitmapIn: Bitmap, bitmapOut: Bitmap)
-    private external fun areaResize(bitmapIn: Bitmap, bitmapOut: Bitmap)
-    private fun resize(bitmap: Bitmap, size: Int = 256): Bitmap {
-        // Resize the image to 256 smaller dim
-
-        val (newHeight, newWidth) = resizeShape(size, bitmap.height, bitmap.width)
-        return Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, false)
     }
 
     private fun resizeShape(size: Int, oldHeight: Int, oldWidth: Int): Pair<Int, Int> {

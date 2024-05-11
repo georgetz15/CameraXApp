@@ -23,6 +23,7 @@ import androidx.camera.video.Recorder
 import androidx.camera.video.Recording
 import androidx.camera.video.VideoCapture
 import androidx.core.content.ContextCompat
+import com.android.example.cameraxapp.ImageProcessing.toGrayscale
 import com.android.example.cameraxapp.databinding.ActivityFiltersBinding
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -48,7 +49,7 @@ class FiltersActivity : AppCompatActivity() {
     private lateinit var cameraExecutor: ExecutorService
 
     private lateinit var tempBitmap: Bitmap
-    private lateinit var filterMethod: ResamplingMethod
+    private lateinit var filterMethod: FilterMethod
 
     private val activityResultLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -103,7 +104,7 @@ class FiltersActivity : AppCompatActivity() {
                         "Selected " + filterMethods[position], Toast.LENGTH_SHORT
                     ).show()
 
-                    filterMethod = ResamplingMethod.fromInt(position)
+                    filterMethod = FilterMethod.fromInt(position)
                 }
 
                 override fun onNothingSelected(parent: AdapterView<*>?) {
@@ -146,19 +147,14 @@ class FiltersActivity : AppCompatActivity() {
                                 true
                             )
 
-//                        // Create resized
-//                        if (!this::tempBitmap.isInitialized) {
-//                            val conf = Bitmap.Config.ARGB_8888 // see other conf types
-//                            val (h, w) = resizeShape(256, bitmap.height, bitmap.width)
-//                            tempBitmap = Bitmap.createBitmap(w, h, conf)
-//                        }
-//
-//                        bitmap = tempBitmap.copy(tempBitmap.config, true)
+                        when (filterMethod) {
+                            FilterMethod.GRAY -> {
+                                toGrayscale(bitmap)
+                            }
+                        }
 
                         // Render from UI thread
                         runOnUiThread {
-//                            viewBinding.viewFinder.layoutParams.height = bitmap.height
-//                            viewBinding.viewFinder.layoutParams.width = bitmap.width
                             viewBinding.viewFinder.setImageBitmap(bitmap)
                         }
                     }
@@ -207,27 +203,6 @@ class FiltersActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         cameraExecutor.shutdown()
-    }
-
-    // Image processing
-    init {
-        System.loadLibrary("cameraxapp")
-    }
-
-    private fun resizeShape(size: Int, oldHeight: Int, oldWidth: Int): Pair<Int, Int> {
-        val newHeight: Int
-        val newWidth: Int
-        if (oldHeight > oldWidth) {
-            newWidth = size
-            newHeight =
-                (oldHeight.toFloat() / oldWidth.toFloat() * size).toInt()
-        } else {
-            newHeight = size
-            newWidth =
-                (oldWidth.toFloat() / oldHeight.toFloat() * size).toInt()
-        }
-
-        return Pair(newHeight, newWidth)
     }
 
     companion object {
