@@ -1,20 +1,244 @@
 package com.android.example.cameraxapp
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.Matrix
+import android.os.Build
 import android.os.Bundle
-import androidx.activity.enableEdgeToEdge
+import android.util.Log
+import android.view.View
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.ImageCapture
+import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.video.Quality
+import androidx.camera.video.QualitySelector
+import androidx.camera.video.Recorder
+import androidx.camera.video.Recording
+import androidx.camera.video.VideoCapture
+import androidx.core.content.ContextCompat
+import com.android.example.cameraxapp.databinding.ActivityFiltersBinding
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+
+
+enum class FilterMethod(val value: Int) {
+    GRAY(0), ;
+
+    companion object {
+        fun fromInt(value: Int) = entries.first { it.value == value }
+    }
+}
 
 class FiltersActivity : AppCompatActivity() {
+
+    private lateinit var viewBinding: ActivityFiltersBinding
+
+    private var imageCapture: ImageCapture? = null
+
+    private var videoCapture: VideoCapture<Recorder>? = null
+    private var recording: Recording? = null
+
+    private lateinit var cameraExecutor: ExecutorService
+
+    private lateinit var tempBitmap: Bitmap
+    private lateinit var filterMethod: ResamplingMethod
+
+    private val activityResultLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        // Handle Permission granted/rejected
+        var permissionGranted = true
+        permissions.entries.forEach {
+            if (it.key in REQUIRED_PERMISSIONS && !it.value) permissionGranted = false
+        }
+        if (!permissionGranted) {
+            Toast.makeText(
+                baseContext, "Permission request denied", Toast.LENGTH_SHORT
+            ).show()
+        } else {
+            startCamera()
+        }
+    }
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        setContentView(R.layout.activity_filters)
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
+        viewBinding = ActivityFiltersBinding.inflate(layoutInflater)
+        setContentView(viewBinding.root)
+
+        // Request camera permissions
+        if (allPermissionsGranted()) {
+            startCamera()
+        } else {
+            requestPermissions()
         }
+
+        cameraExecutor = Executors.newSingleThreadExecutor()
+
+        // Spinner
+        val filterMethods = resources.getStringArray(R.array.FilterMethods)
+        val spinner = viewBinding.filtersMethodSpinner
+        if (spinner != null) {
+            val adapter = ArrayAdapter(
+                this,
+                android.R.layout.simple_spinner_item, filterMethods
+            )
+            spinner.adapter = adapter
+            spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(
+                    parent: AdapterView<*>?,
+                    view: View?,
+                    position: Int,
+                    id: Long
+                ) {
+                    Toast.makeText(
+                        this@FiltersActivity,
+                        "Selected " + filterMethods[position], Toast.LENGTH_SHORT
+                    ).show()
+
+                    filterMethod = ResamplingMethod.fromInt(position)
+                }
+
+                override fun onNothingSelected(parent: AdapterView<*>?) {
+                    TODO("Not yet implemented")
+                }
+            }
+        }
+    }
+
+    private fun startCamera() {
+        val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
+
+        cameraProviderFuture.addListener({
+            // Used to bind the lifecycle of cameras to the lifecycle owner
+            val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
+
+            // Image capture
+            imageCapture = ImageCapture.Builder().build()
+            val imageViewer = ImageAnalysis.Builder()
+                .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
+                .build()
+                .also {
+                    it.setAnalyzer(cameraExecutor) { image ->
+                        Log.d("image view", "image.format = ${image.format}")
+                        // Get the image bitmap
+                        var bitmap = image.toBitmap()
+                        image.close()
+
+                        // Rotate the image if needed
+                        val matrix =
+                            Matrix().apply { postRotate(image.imageInfo.rotationDegrees.toFloat()) }
+                        bitmap =
+                            Bitmap.createBitmap(
+                                bitmap,
+                                0,
+                                0,
+                                bitmap.width,
+                                bitmap.height,
+                                matrix,
+                                true
+                            )
+
+//                        // Create resized
+//                        if (!this::tempBitmap.isInitialized) {
+//                            val conf = Bitmap.Config.ARGB_8888 // see other conf types
+//                            val (h, w) = resizeShape(256, bitmap.height, bitmap.width)
+//                            tempBitmap = Bitmap.createBitmap(w, h, conf)
+//                        }
+//
+//                        bitmap = tempBitmap.copy(tempBitmap.config, true)
+
+                        // Render from UI thread
+                        runOnUiThread {
+//                            viewBinding.viewFinder.layoutParams.height = bitmap.height
+//                            viewBinding.viewFinder.layoutParams.width = bitmap.width
+                            viewBinding.viewFinder.setImageBitmap(bitmap)
+                        }
+                    }
+                }
+
+            // Recorder
+            val recorder = Recorder.Builder()
+                .setQualitySelector(QualitySelector.from(Quality.HIGHEST))
+                .build()
+            videoCapture = VideoCapture.withOutput(recorder)
+
+
+            // Select back camera as a default
+            val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+
+            try {
+                // Unbind use cases before rebinding
+                cameraProvider.unbindAll()
+
+                // Bind use cases to camera
+                cameraProvider.bindToLifecycle(
+                    this,
+                    cameraSelector,
+                    imageViewer,
+                    imageCapture,
+                    videoCapture
+                )
+
+            } catch (exc: Exception) {
+                Log.e(TAG, "Use case binding failed", exc)
+            }
+
+        }, ContextCompat.getMainExecutor(this))
+    }
+
+    private fun requestPermissions() {
+        activityResultLauncher.launch(REQUIRED_PERMISSIONS)
+    }
+
+    private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
+        ContextCompat.checkSelfPermission(
+            baseContext, it
+        ) == PackageManager.PERMISSION_GRANTED
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        cameraExecutor.shutdown()
+    }
+
+    // Image processing
+    init {
+        System.loadLibrary("cameraxapp")
+    }
+
+    private fun resizeShape(size: Int, oldHeight: Int, oldWidth: Int): Pair<Int, Int> {
+        val newHeight: Int
+        val newWidth: Int
+        if (oldHeight > oldWidth) {
+            newWidth = size
+            newHeight =
+                (oldHeight.toFloat() / oldWidth.toFloat() * size).toInt()
+        } else {
+            newHeight = size
+            newWidth =
+                (oldWidth.toFloat() / oldHeight.toFloat() * size).toInt()
+        }
+
+        return Pair(newHeight, newWidth)
+    }
+
+    companion object {
+        private const val TAG = "CameraXApp"
+        private const val FILENAME_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"
+        private val REQUIRED_PERMISSIONS = mutableListOf(
+            Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO
+        ).apply {
+            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
+                add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            }
+        }.toTypedArray()
     }
 }
