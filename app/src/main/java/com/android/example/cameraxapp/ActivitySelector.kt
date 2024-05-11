@@ -17,7 +17,7 @@ class ActivitySelector : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_selector)
 
-        val adapter = ArrayAdapter(this, R.layout.activity_selector_list_item, activities)
+        val adapter = ArrayAdapter(this, R.layout.general_list_item, activities)
         findViewById<ListView>(R.id.activity_list)
             .also {
                 it.setAdapter(adapter)

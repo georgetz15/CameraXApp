@@ -102,7 +102,7 @@ class ResamplingActivity : AppCompatActivity() {
         if (spinner != null) {
             val adapter = ArrayAdapter(
                 this,
-                android.R.layout.simple_spinner_item, resamplingMethods
+                R.layout.general_list_item, resamplingMethods
             )
             spinner.adapter = adapter
             spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
