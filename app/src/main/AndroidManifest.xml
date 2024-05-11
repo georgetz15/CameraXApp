@@ -21,6 +21,9 @@
         android:theme="@style/Theme.CameraXApp"
         tools:targetApi="31">
         <activity
+            android:name=".FiltersActivity"
+            android:exported="false" />
+        <activity
             android:name=".ActivitySelector"
             android:exported="true">
             <intent-filter>

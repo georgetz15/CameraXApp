@@ -8,7 +8,10 @@ import androidx.appcompat.app.AppCompatActivity
 
 class ActivitySelector : AppCompatActivity() {
 
-    private val activities = arrayOf("Resampling")
+    private val activities = arrayOf(
+        "Resampling",
+        "Filters",
+    )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -21,6 +24,7 @@ class ActivitySelector : AppCompatActivity() {
                 it.setOnItemClickListener { parent, view, position, id ->
                     val targetActivity = when (position) {
                         0 -> ResamplingActivity::class.java
+                        1 -> FiltersActivity::class.java
                         else -> null
                     }
 
