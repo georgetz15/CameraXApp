@@ -30,6 +30,7 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
         cameraxapp.cpp
         ImageTypes.h
         ImageTypes.cpp
+        Resampling.h
 )
 
 # Specifies libraries CMake should link to your target library. You

@@ -9,8 +9,8 @@ object ImageProcessing {
 
     external fun toGrayscale(bitmap: Bitmap)
     external fun boxBlur(bitmapIn: Bitmap, bitmapOut: Bitmap, kernelSize: Int)
-    external fun bilinearResize(bitmapIn: Bitmap, bitmapOut: Bitmap)
-    external fun areaResize(bitmapIn: Bitmap, bitmapOut: Bitmap)
+    external fun downsampleBilinear(bitmapIn: Bitmap, bitmapOut: Bitmap)
+    external fun downsampleArea(bitmapIn: Bitmap, bitmapOut: Bitmap)
 
     fun resizeShape(size: Int, oldHeight: Int, oldWidth: Int): Pair<Int, Int> {
         val newHeight: Int

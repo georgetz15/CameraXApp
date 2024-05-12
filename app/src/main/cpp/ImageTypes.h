@@ -6,6 +6,9 @@
 #define CAMERAXAPP_IMAGETYPES_H
 
 #include <type_traits>
+#include <jni.h>
+#include <android/bitmap.h>
+#include <sys/types.h>
 
 template<typename T>
 struct rgba {
@@ -56,8 +59,8 @@ inline rgba<T> operator*(const rgba<T> &px, const float &mul) {
     };
 }
 
-template<typename T>
-inline rgba<T> operator+(const rgba<T> &px1, const rgba<T> &px2) {
+template<typename T, typename O>
+inline rgba<T> operator+(const rgba<T> &px1, const rgba<O> &px2) {
     return {
             static_cast<T>(px1.r + px2.r),
             static_cast<T>(px1.g + px2.g),
@@ -67,8 +70,11 @@ inline rgba<T> operator+(const rgba<T> &px1, const rgba<T> &px2) {
 }
 
 template<typename T, typename O>
-inline rgba<T> &operator+=(rgba<T> &px1, rgba<O> &px2) {
-    px1 = px1 + px2;
+inline rgba<T> &operator+=(rgba<T> &px1, const rgba<O> &px2) {
+    px1.r += px2.r;
+    px1.g += px2.g;
+    px1.b += px2.b;
+    px1.a += px2.a;
     return px1;
 }
 
@@ -81,11 +87,82 @@ inline rgba<T> &operator/=(rgba<T> &px1, const O &num) {
 }
 
 
-//template<typename T>
-//class Image {
-//    public:
-//    private:
-//
-//};
+template<typename T>
+class Image {
+public:
+    Image(T *pixels, const int width, const int height)
+            : width(width),
+              height(height) {
+        this->pixels = pixels;
+    }
+
+    rgba8u &operator()(const int &x, const int &y) const {
+        return pixels[y * width + x];
+    }
+
+    T *getPixels() {
+        return pixels;
+    }
+
+    const int width;
+    const int height;
+
+private:
+    T *pixels;
+};
+
+
+struct JNIBitmap {
+    rgba8u *pixels;
+    uint width;
+    uint height;
+    jobject *bitmap{nullptr};
+    JNIEnv *env{nullptr};
+
+    JNIBitmap(jobject *bitmap, JNIEnv *env) {
+        this->bitmap = bitmap;
+        this->env = env;
+
+        AndroidBitmapInfo infoIn;
+
+        // Get image info
+        if (AndroidBitmap_getInfo(this->env, *this->bitmap, &infoIn) !=
+            ANDROID_BITMAP_RESULT_SUCCESS) {
+//            return this->env->NewStringUTF("failed");
+        }
+
+        // Check image
+        if (infoIn.format != ANDROID_BITMAP_FORMAT_RGBA_8888) {
+//            return env->NewStringUTF(
+//                    "Only support ANDROID_BITMAP_FORMAT_RGBA_8888");
+        }
+
+        // Lock all images
+        if (AndroidBitmap_lockPixels(this->env, *this->bitmap, (void **) &pixels) !=
+            ANDROID_BITMAP_RESULT_SUCCESS) {
+//            return env->NewStringUTF("AndroidBitmap_lockPixels failed!");
+        }
+
+        width = infoIn.width;
+        height = infoIn.height;
+    }
+
+    ~JNIBitmap() {
+        AndroidBitmap_unlockPixels(this->env, *this->bitmap);
+    }
+
+    rgba8u &operator()(const int &x, const int &y) {
+        return pixels[y * width + x];
+    }
+
+    /*
+     * Returns a view to the image data.
+     * The buffer ownership is held by the JNIBitmap instance!
+     */
+    Image<rgba8u> getImageView() {
+        auto img = Image<rgba8u>(pixels, width, height);
+        return img;
+    }
+};
 
 #endif //CAMERAXAPP_IMAGETYPES_H

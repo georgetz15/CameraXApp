@@ -23,8 +23,7 @@ import androidx.camera.video.Recorder
 import androidx.camera.video.Recording
 import androidx.camera.video.VideoCapture
 import androidx.core.content.ContextCompat
-import com.android.example.cameraxapp.ImageProcessing.areaResize
-import com.android.example.cameraxapp.ImageProcessing.bilinearResize
+import com.android.example.cameraxapp.ImageProcessing.downsampleArea
 import com.android.example.cameraxapp.ImageProcessing.boxBlur
 import com.android.example.cameraxapp.ImageProcessing.resizeShape
 import com.android.example.cameraxapp.ImageProcessing.toGrayscale
@@ -157,7 +156,7 @@ class FiltersActivity : AppCompatActivity() {
                         if (!this::tempBitmap.isInitialized) {
                             tempBitmap = Bitmap.createBitmap(w, h, conf)
                         }
-                        areaResize(bitmap, tempBitmap)
+                        downsampleArea(bitmap, tempBitmap)
                         bitmap = tempBitmap.copy(tempBitmap.config, true)
 
                         when (filterMethod) {

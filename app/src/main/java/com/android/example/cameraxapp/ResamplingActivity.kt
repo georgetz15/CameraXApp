@@ -29,8 +29,8 @@ import androidx.camera.video.VideoCapture
 import androidx.camera.video.VideoRecordEvent
 import androidx.core.content.ContextCompat
 import androidx.core.content.PermissionChecker
-import com.android.example.cameraxapp.ImageProcessing.areaResize
-import com.android.example.cameraxapp.ImageProcessing.bilinearResize
+import com.android.example.cameraxapp.ImageProcessing.downsampleArea
+import com.android.example.cameraxapp.ImageProcessing.downsampleBilinear
 import com.android.example.cameraxapp.ImageProcessing.resizeShape
 import com.android.example.cameraxapp.databinding.ActivityResampleBinding
 import java.text.SimpleDateFormat
@@ -280,8 +280,8 @@ class ResamplingActivity : AppCompatActivity() {
 
                         // Processing logic
                         when (resamplingMethod) {
-                            ResamplingMethod.BILINEAR -> bilinearResize(bitmap, tempBitmap)
-                            ResamplingMethod.AREA -> areaResize(bitmap, tempBitmap)
+                            ResamplingMethod.BILINEAR -> downsampleBilinear(bitmap, tempBitmap)
+                            ResamplingMethod.AREA -> downsampleArea(bitmap, tempBitmap)
                         }
 
                         bitmap = tempBitmap.copy(tempBitmap.config, true)
