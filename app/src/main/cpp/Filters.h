@@ -5,17 +5,19 @@
 #ifndef CAMERAXAPP_FILTERS_H
 #define CAMERAXAPP_FILTERS_H
 
+#define _USE_MATH_DEFINES
 
+#include <math.h>
 #include <algorithm>
 #include "ImageTypes.h"
 
-template<typename T>
+template<typename T, typename O, typename K>
 void sepfilt(const Image<rgba<T>> in,
              Image<rgba<T>> out,
-             const std::vector<T> &filterHorizontal,
-             const std::vector<T> &filterVertical,
+             const std::vector<O> &filterHorizontal,
+             const std::vector<O> &filterVertical,
              float norm) {
-    Image<rgba16u> temp(in.width, in.height);
+    Image<rgba<K>> temp(in.width, in.height);
 
 #pragma omp parallel for collapse(2)
     for (int y = 0; y < in.height; ++y) {
@@ -66,19 +68,32 @@ template<typename T>
 void boxBlur(const Image<rgba<T>> inImg, Image<rgba<T>> outImg, const int kernelSize) {
     std::vector<T> filter(kernelSize);
     std::fill(filter.begin(), filter.end(), 1);
-    sepfilt(inImg, outImg, filter, filter, 1.0f / (kernelSize * kernelSize));
+    sepfilt<T, T, uint16_t>(inImg, outImg, filter, filter, 1.0f / (kernelSize * kernelSize));
 }
 
 template<typename T>
-void gaussianBlur(const Image<rgba<T>> inImg, Image<rgba<T>> outImg, const int kernelSize) {
-    std::vector<T> filter(5);
+void gaussianBlur(const Image<rgba<T>> inImg,
+                  Image<rgba<T>> outImg,
+                  float sigma) {
 //    std::fill(filter.begin(), filter.end(), 1);
-    filter[0] = 1;
-    filter[1] = 4;
-    filter[2] = 6;
-    filter[3] = 4;
-    filter[4] = 1;
-    sepfilt(inImg, outImg, filter, filter, 1.0f / (16 * 16));
+    // WIP: see
+//    https://www.rastergrid.com/blog/2010/09/efficient-gaussian-blur-with-linear-sampling/
+//    https://computergraphics.stackexchange.com/questions/39/how-is-gaussian-blur-implemented
+
+    const int ks = ceil(sigma) * 2 + 1;
+    std::vector<float> filter(ks);
+
+    float norm = 0.0f;
+    for (int i = 0; i < ks; ++i) {
+        auto xi = (i - ks / 2);
+        filter[i] = std::expf(-(xi * xi) / (2.0f * sigma * sigma)) /
+                    (2.0f * M_PI * sigma * sigma);
+        norm += filter[i];
+    }
+    for (int i = 0; i < ks; ++i) {
+        filter[i] /= norm;
+    }
+    sepfilt<T, float, float>(inImg, outImg, filter, filter, 1.0f);
 }
 
 template<typename T>

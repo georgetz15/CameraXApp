@@ -10,7 +10,12 @@ object ImageProcessing {
     external fun gray(bitmap: Bitmap)
     external fun sepia(bitmap: Bitmap)
     external fun boxBlur(bitmapIn: Bitmap, bitmapOut: Bitmap, kernelSize: Int)
-    external fun gaussianBlur(bitmapIn: Bitmap, bitmapOut: Bitmap, kernelSize: Int)
+    external fun gaussianBlur(
+        bitmapIn: Bitmap,
+        bitmapOut: Bitmap,
+        sigma: Float = 1.0f
+    )
+
     external fun downsampleBilinear(bitmapIn: Bitmap, bitmapOut: Bitmap)
     external fun downsampleArea(bitmapIn: Bitmap, bitmapOut: Bitmap)
 

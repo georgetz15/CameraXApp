@@ -172,7 +172,7 @@ class FiltersActivity : AppCompatActivity() {
                             }
 
                             FilterMethod.GAUSS_BLUR -> {
-                                gaussianBlur(tempBitmap, bitmap, 5)
+                                gaussianBlur(tempBitmap, bitmap, 3f)
                             }
 
                             FilterMethod.SEPIA -> {

@@ -49,13 +49,13 @@ Java_com_android_example_cameraxapp_ImageProcessing_gaussianBlur(JNIEnv *env,
                                                             jobject,
                                                             jobject bitmapIn,
                                                             jobject tempBitmap,
-                                                            jint kernelSize) {
+                                                            jfloat sigma) {
     auto inBmp = JNIBitmap(&bitmapIn, env);
     auto outBmp = JNIBitmap(&tempBitmap, env);
     auto inImg = inBmp.getImageView();
     auto outImg = outBmp.getImageView();
 
-    gaussianBlur(inImg, outImg, kernelSize);
+    gaussianBlur(inImg, outImg, sigma);
 }
 
 JNIEXPORT void JNICALL
