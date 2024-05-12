@@ -6,7 +6,7 @@
 #define CAMERAXAPP_FILTERS_H
 
 
-#include <__algorithm/clamp.h>
+#include <algorithm>
 #include "ImageTypes.h"
 
 template<typename T>
