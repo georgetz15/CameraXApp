@@ -45,6 +45,20 @@ Java_com_android_example_cameraxapp_ImageProcessing_boxBlur(JNIEnv *env,
 }
 
 JNIEXPORT void JNICALL
+Java_com_android_example_cameraxapp_ImageProcessing_gaussianBlur(JNIEnv *env,
+                                                            jobject,
+                                                            jobject bitmapIn,
+                                                            jobject tempBitmap,
+                                                            jint kernelSize) {
+    auto inBmp = JNIBitmap(&bitmapIn, env);
+    auto outBmp = JNIBitmap(&tempBitmap, env);
+    auto inImg = inBmp.getImageView();
+    auto outImg = outBmp.getImageView();
+
+    gaussianBlur(inImg, outImg, kernelSize);
+}
+
+JNIEXPORT void JNICALL
 Java_com_android_example_cameraxapp_ImageProcessing_downsampleBilinear(JNIEnv *env,
                                                                        jobject,
                                                                        jobject bitmapIn,

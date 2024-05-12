@@ -25,6 +25,7 @@ import androidx.camera.video.VideoCapture
 import androidx.core.content.ContextCompat
 import com.android.example.cameraxapp.ImageProcessing.downsampleArea
 import com.android.example.cameraxapp.ImageProcessing.boxBlur
+import com.android.example.cameraxapp.ImageProcessing.gaussianBlur
 import com.android.example.cameraxapp.ImageProcessing.resizeShape
 import com.android.example.cameraxapp.ImageProcessing.gray
 import com.android.example.cameraxapp.ImageProcessing.sepia
@@ -36,7 +37,8 @@ import java.util.concurrent.Executors
 enum class FilterMethod(val value: Int) {
     GRAY(0),
     BLUR(1),
-    SEPIA(2), ;
+    GAUSS_BLUR(2),
+    SEPIA(3), ;
 
     companion object {
         fun fromInt(value: Int) = entries.first { it.value == value }
@@ -168,7 +170,11 @@ class FiltersActivity : AppCompatActivity() {
                             }
 
                             FilterMethod.BLUR -> {
-                                boxBlur(tempBitmap, bitmap, 8)
+                                boxBlur(tempBitmap, bitmap, 5)
+                            }
+
+                            FilterMethod.GAUSS_BLUR -> {
+                                gaussianBlur(tempBitmap, bitmap, 5)
                             }
 
                             FilterMethod.SEPIA -> {
