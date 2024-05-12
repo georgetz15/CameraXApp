@@ -70,6 +70,8 @@ void sepia(Image<rgba<T>> img) {
             val.b = px.r * .272f + px.g * .534f + px.b * .131f;
             val.b = std::clamp(val.b, (uint16_t) 0, (uint16_t) 255);
 
+            val.a = px.a;
+
             img(x, y) = val;
         }
     }
