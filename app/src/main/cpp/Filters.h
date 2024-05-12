@@ -10,6 +10,44 @@
 #include "ImageTypes.h"
 
 template<typename T>
+void sepfilt(const Image<rgba<T>> in, Image<rgba<T>> out, const std::vector<T>& filter, float norm) {
+    Image<rgba16u> temp(in.width, in.height);
+
+    const int kernelSize = filter.size();
+
+#pragma omp parallel for collapse(2)
+    for (int y = 0; y < in.height; ++y) {
+        for (int x = 0; x < in.width; ++x) {
+            temp(x, y) = 0;
+            for (int k = 0; k < kernelSize; ++k) {
+                const int xk = x + k - kernelSize / 2;
+                if (xk < 0 || in.width <= xk) continue;
+                temp(x, y).r += in(xk, y).r * filter[k];
+                temp(x, y).g += in(xk, y).g * filter[k];
+                temp(x, y).b += in(xk, y).b * filter[k];
+            }
+        }
+    }
+
+#pragma omp parallel for collapse(2)
+    for (int y = 0; y < in.height; ++y) {
+        for (int x = 0; x < in.width; ++x) {
+            rgba16u pxOut;
+            pxOut = 0;
+            for (int k = 0; k < kernelSize; ++k) {
+                const int yk = y + k - kernelSize / 2;
+                if (yk < 0 || in.height <= yk) continue;
+                pxOut.r += temp(x, yk).r * filter[k];
+                pxOut.g += temp(x, yk).g * filter[k];
+                pxOut.b += temp(x, yk).b * filter[k];
+            }
+            out(x, y) = norm * pxOut;
+            out(x, y).a = in(x, y).a;
+        }
+    }
+}
+
+template<typename T>
 void gray(Image<rgba<T>> img) {
 #pragma omp parallel for collapse(2)
     for (int y = 0; y < img.height; ++y) {
@@ -24,34 +62,9 @@ void gray(Image<rgba<T>> img) {
 
 template<typename T>
 void boxBlur(const Image<rgba<T>> inImg, Image<rgba<T>> outImg, const int kernelSize) {
-    auto width = inImg.width;
-    auto height = inImg.height;
-
-// scan through every single pixel
-#pragma omp parallel for collapse(2)
-    for (int y = 0; y < height; ++y) {
-        for (int x = 0; x < width; ++x) {
-            rgba16u out;
-            out = 0;
-            for (int j = -kernelSize / 2; j < -kernelSize / 2 + kernelSize; ++j) {
-                for (int i = -kernelSize / 2; i < -kernelSize / 2 + kernelSize; ++i) {
-                    auto xi = x + i;
-                    auto yj = y + j;
-                    if (xi < 0 || width <= xi || yj < 0 || height <= yj) {
-                        continue;
-                    }
-
-                    // retrieve color of all channels
-                    auto &px = inImg(xi, yj);
-                    out.r += px.r;
-                    out.g += px.g;
-                    out.b += px.b;
-                }
-            }
-            outImg(x, y) = out / (kernelSize * kernelSize);
-            outImg(x, y).a = inImg(x, y).a;
-        }
-    }
+    std::vector<T> filter(kernelSize);
+    std::fill(filter.begin(), filter.end(), 1);
+    sepfilt(inImg, outImg, filter, 1.0f / (kernelSize * kernelSize));
 }
 
 template<typename T>
@@ -59,7 +72,7 @@ void sepia(Image<rgba<T>> img) {
 #pragma omp parallel for collapse(2)
     for (int y = 0; y < img.height; ++y) {
         for (int x = 0; x < img.width; ++x) {
-            auto& px = img(x, y);
+            auto &px = img(x, y);
             rgba16u val;
             val.r = px.r * .393f + px.g * .769f + px.b * .189f;
             val.r = std::clamp(val.r, (uint16_t) 0, (uint16_t) 255);

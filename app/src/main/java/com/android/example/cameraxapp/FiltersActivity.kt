@@ -153,13 +153,14 @@ class FiltersActivity : AppCompatActivity() {
                                 true
                             )
                         // Create resized
-                        val conf = Bitmap.Config.ARGB_8888 // see other conf types
-                        val (h, w) = resizeShape(256, bitmap.height, bitmap.width)
-                        if (!this::tempBitmap.isInitialized) {
-                            tempBitmap = Bitmap.createBitmap(w, h, conf)
-                        }
-                        downsampleArea(bitmap, tempBitmap)
-                        bitmap = tempBitmap.copy(tempBitmap.config, true)
+//                        val conf = Bitmap.Config.ARGB_8888 // see other conf types
+//                        val (h, w) = resizeShape(256, bitmap.height, bitmap.width)
+//                        if (!this::tempBitmap.isInitialized) {
+//                            tempBitmap = Bitmap.createBitmap(w, h, conf)
+//                        }
+//                        downsampleArea(bitmap, tempBitmap)
+//                        bitmap = tempBitmap.copy(tempBitmap.config, true)
+                        tempBitmap = bitmap.copy(bitmap.config, true)
 
                         when (filterMethod) {
                             FilterMethod.GRAY -> {
@@ -167,7 +168,7 @@ class FiltersActivity : AppCompatActivity() {
                             }
 
                             FilterMethod.BLUR -> {
-                                boxBlur(tempBitmap, bitmap, 4)
+                                boxBlur(tempBitmap, bitmap, 8)
                             }
 
                             FilterMethod.SEPIA -> {

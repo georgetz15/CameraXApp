@@ -59,6 +59,16 @@ inline rgba<T> operator*(const rgba<T> &px, const float &mul) {
     };
 }
 
+template<typename T>
+inline rgba<T> operator*(const float &mul, const rgba<T> &px) {
+    return {
+            static_cast<T>(px.r * mul),
+            static_cast<T>(px.g * mul),
+            static_cast<T>(px.b * mul),
+            static_cast<T>(px.a * mul),
+    };
+}
+
 template<typename T, typename O>
 inline rgba<T> operator+(const rgba<T> &px1, const rgba<O> &px2) {
     return {
@@ -90,13 +100,31 @@ inline rgba<T> &operator/=(rgba<T> &px1, const O &num) {
 template<typename T>
 class Image {
 public:
-    Image(T *pixels, const int width, const int height)
+    Image(T *pixels, const int width, const int height, bool copy = false)
             : width(width),
-              height(height) {
-        this->pixels = pixels;
+              height(height),
+              ownsData(copy) {
+        if (!copy) {
+            this->pixels = pixels;
+        } else {
+            this->pixels = new T[width * height];
+        }
     }
 
-    rgba8u &operator()(const int &x, const int &y) const {
+    Image(const int width, const int height)
+            : width(width),
+              height(height),
+              ownsData(true) {
+        this->pixels = new T[width * height];
+    }
+
+    ~Image() {
+        if (ownsData) {
+            delete[] this->pixels;
+        }
+    }
+
+    T &operator()(const int &x, const int &y) const {
         return pixels[y * width + x];
     }
 
@@ -109,6 +137,7 @@ public:
 
 private:
     T *pixels;
+    bool ownsData;
 };
 
 
