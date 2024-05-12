@@ -60,7 +60,7 @@ void sepia(Image<rgba<T>> img) {
     for (int y = 0; y < img.height; ++y) {
         for (int x = 0; x < img.width; ++x) {
             auto& px = img(x, y);
-            rgba<uint16_t> val;
+            rgba16u val;
             val.r = px.r * .393f + px.g * .769f + px.b * .189f;
             val.r = std::clamp(val.r, (uint16_t) 0, (uint16_t) 255);
 
