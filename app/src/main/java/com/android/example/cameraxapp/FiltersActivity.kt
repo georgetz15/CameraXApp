@@ -26,7 +26,8 @@ import androidx.core.content.ContextCompat
 import com.android.example.cameraxapp.ImageProcessing.downsampleArea
 import com.android.example.cameraxapp.ImageProcessing.boxBlur
 import com.android.example.cameraxapp.ImageProcessing.resizeShape
-import com.android.example.cameraxapp.ImageProcessing.toGrayscale
+import com.android.example.cameraxapp.ImageProcessing.gray
+import com.android.example.cameraxapp.ImageProcessing.sepia
 import com.android.example.cameraxapp.databinding.ActivityFiltersBinding
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -34,7 +35,8 @@ import java.util.concurrent.Executors
 
 enum class FilterMethod(val value: Int) {
     GRAY(0),
-    BLUR(1), ;
+    BLUR(1),
+    SEPIA(2), ;
 
     companion object {
         fun fromInt(value: Int) = entries.first { it.value == value }
@@ -161,11 +163,15 @@ class FiltersActivity : AppCompatActivity() {
 
                         when (filterMethod) {
                             FilterMethod.GRAY -> {
-                                toGrayscale(bitmap)
+                                gray(bitmap)
                             }
 
                             FilterMethod.BLUR -> {
                                 boxBlur(tempBitmap, bitmap, 4)
+                            }
+
+                            FilterMethod.SEPIA -> {
+                                sepia(bitmap)
                             }
                         }
 

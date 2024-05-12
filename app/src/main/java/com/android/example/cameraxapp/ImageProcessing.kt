@@ -7,7 +7,8 @@ object ImageProcessing {
         System.loadLibrary("cameraxapp")
     }
 
-    external fun toGrayscale(bitmap: Bitmap)
+    external fun gray(bitmap: Bitmap)
+    external fun sepia(bitmap: Bitmap)
     external fun boxBlur(bitmapIn: Bitmap, bitmapOut: Bitmap, kernelSize: Int)
     external fun downsampleBilinear(bitmapIn: Bitmap, bitmapOut: Bitmap)
     external fun downsampleArea(bitmapIn: Bitmap, bitmapOut: Bitmap)

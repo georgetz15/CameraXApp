@@ -13,5 +13,6 @@
     <string-array name="FilterMethods">
         <item>Gray</item>
         <item>Blur</item>
+        <item>Sepia</item>
     </string-array>
 </resources>

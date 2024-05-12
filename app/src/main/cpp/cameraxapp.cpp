@@ -11,13 +11,23 @@
 extern "C" {
 
 JNIEXPORT void JNICALL
-Java_com_android_example_cameraxapp_ImageProcessing_toGrayscale(JNIEnv *env,
+Java_com_android_example_cameraxapp_ImageProcessing_gray(JNIEnv *env,
+                                                         jobject,
+                                                         jobject bitmapIn) {
+
+    auto bmp = JNIBitmap(&bitmapIn, env);
+    auto img = bmp.getImageView();
+    gray(img);
+}
+
+JNIEXPORT void JNICALL
+Java_com_android_example_cameraxapp_ImageProcessing_sepia(JNIEnv *env,
                                                                 jobject,
                                                                 jobject bitmapIn) {
 
     auto bmp = JNIBitmap(&bitmapIn, env);
     auto img = bmp.getImageView();
-    gray(img);
+    sepia(img);
 }
 
 JNIEXPORT void JNICALL

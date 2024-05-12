@@ -6,6 +6,7 @@
 #define CAMERAXAPP_FILTERS_H
 
 
+#include <__algorithm/clamp.h>
 #include "ImageTypes.h"
 
 template<typename T>
@@ -49,6 +50,27 @@ void boxBlur(const Image<rgba<T>> inImg, Image<rgba<T>> outImg, const int kernel
             }
             outImg(x, y) = out / (kernelSize * kernelSize);
             outImg(x, y).a = inImg(x, y).a;
+        }
+    }
+}
+
+template<typename T>
+void sepia(Image<rgba<T>> img) {
+#pragma omp parallel for collapse(2)
+    for (int y = 0; y < img.height; ++y) {
+        for (int x = 0; x < img.width; ++x) {
+            auto& px = img(x, y);
+            rgba<uint16_t> val;
+            val.r = px.r * .393f + px.g * .769f + px.b * .189f;
+            val.r = std::clamp(val.r, (uint16_t) 0, (uint16_t) 255);
+
+            val.g = px.r * .349f + px.g * .686f + px.b * .168f;
+            val.g = std::clamp(val.g, (uint16_t) 0, (uint16_t) 255);
+
+            val.b = px.r * .272f + px.g * .534f + px.b * .131f;
+            val.b = std::clamp(val.b, (uint16_t) 0, (uint16_t) 255);
+
+            img(x, y) = val;
         }
     }
 }
