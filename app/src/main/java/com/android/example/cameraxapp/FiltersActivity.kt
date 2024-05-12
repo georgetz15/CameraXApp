@@ -23,13 +23,11 @@ import androidx.camera.video.Recorder
 import androidx.camera.video.Recording
 import androidx.camera.video.VideoCapture
 import androidx.core.content.ContextCompat
-import com.android.example.cameraxapp.ImageProcessing.downsampleArea
 import com.android.example.cameraxapp.ImageProcessing.boxBlur
 import com.android.example.cameraxapp.ImageProcessing.gaussianBlur
-import com.android.example.cameraxapp.ImageProcessing.resizeShape
 import com.android.example.cameraxapp.ImageProcessing.gray
 import com.android.example.cameraxapp.ImageProcessing.sepia
-import com.android.example.cameraxapp.databinding.ActivityFiltersBinding
+import com.android.example.cameraxapp.databinding.BasicDisplayBinding
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -47,7 +45,7 @@ enum class FilterMethod(val value: Int) {
 
 class FiltersActivity : AppCompatActivity() {
 
-    private lateinit var viewBinding: ActivityFiltersBinding
+    private lateinit var viewBinding: BasicDisplayBinding
 
     private var imageCapture: ImageCapture? = null
 
@@ -79,7 +77,7 @@ class FiltersActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        viewBinding = ActivityFiltersBinding.inflate(layoutInflater)
+        viewBinding = BasicDisplayBinding.inflate(layoutInflater)
         setContentView(viewBinding.root)
 
         // Request camera permissions
@@ -93,7 +91,7 @@ class FiltersActivity : AppCompatActivity() {
 
         // Spinner
         val filterMethods = resources.getStringArray(R.array.FilterMethods)
-        val spinner = viewBinding.filtersMethodSpinner
+        val spinner = viewBinding.dropdownSpinner
         if (spinner != null) {
             val adapter = ArrayAdapter(
                 this,
